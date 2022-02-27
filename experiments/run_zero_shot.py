@@ -10,35 +10,17 @@ from timm.data import resolve_data_config, create_transform
 from tqdm import tqdm
 import argparse
 from collections import defaultdict
-from experiments.config import ZEROSHOT_RESULTS_PATH, TEST_GOLD_PATH, TEST_RANDOM_PATH
+from experiments.config import ZEROSHOT_RESULTS_PATH, TEST_GOLD_PATH, TEST_RANDOM_PATH, MODELS_MAP
 from experiments.models.zero_shot import ZeroShot
 
 # ------------------------------Constants--------------------------------
 
-TIMM_MODELS = ['vit', 'swin', 'deit', 'efficientnet', 'regnety']
-
-MODELS_MAP = {
-    # https://arxiv.org/abs/2010.11929
-    # ViT-Large model (ViT-L/32), ImageNet-1k weights fine-tuned from in21k @ 384x384
-    'vit': 'vit_large_patch32_384',
-
-    # https://arxiv.org/abs/2103.14030
-    # Swin-L @ 384x384, pretrzained ImageNet-22k, fine tune 1k
-    'swin': 'swin_large_patch4_window12_384',
-
-    # https://arxiv.org/abs/2012.12877
-    # DeiT base model @ 384x384,ImageNet-1k weights from https://github.com/facebookresearch/deit.
-    'deit': 'deit_base_patch16_384',
-
-    # https://arxiv.org/pdf/2201.03545.pdf
-    'convnext': 'convnext_large'
-
-}
-
+IMG_NAMES = ['A', 'B', 'C', 'D']
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-# ------------------------------Code--------------------------------
+# ------------------------------Arguments--------------------------------
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -63,6 +45,8 @@ def get_args():
     return args
 
 
+# ------------------------------Code--------------------------------
+
 def run_trained_scores(model, row, args):
     """
     Parameters
@@ -79,13 +63,7 @@ def run_trained_scores(model, row, args):
         (dict) where the key is the image file name and the value is the list cosine scores for each candidate
 
     """
-    all_image_features = dict()
-
-    all_image_features['A'] = model.preprocess(row.A_img)
-    all_image_features['B'] = model.preprocess(row.B_img)
-    all_image_features['C'] = model.preprocess(row.C_img)
-    all_image_features['D'] = model.preprocess(row.D_img)
-
+    all_image_features = {k: model.preprocess(row[f'{k}_img']) for k in IMG_NAMES}
     all_image_features['candidates'] = [model.preprocess(candidate) for candidate in row.candidates]
 
     if args.analogies_model:
@@ -109,7 +87,7 @@ def load_model(args):
     if model_name not in MODELS_MAP:
         raise Exception(f"Unknown model {model_name}")
 
-    model = timm.create_model(MODELS_MAP[model_name], pretrained=True, num_classes=0)
+    model = timm.create_model(MODELS_MAP[model_name], pretrained=True)
     config = resolve_data_config({}, model=model)
     transform = create_transform(**config)
     model = model.to(device)
@@ -177,14 +155,13 @@ def run_test(args, df):
 
 def get_test_set(args):
     """
-
     Parameters
     ----------
-    args :
+    args : (argparse.Namespace) arguments
 
     Returns
     -------
-
+    The test set as DataFrame
     """
 
     if args.split == 'random':
@@ -198,6 +175,7 @@ def get_test_set(args):
     for c in ['distractors', 'random_candidates']:
         if c in test_gold.columns:
             test_gold['candidates'] = test_gold[c]
+
     print(f"Read GOLD test: {len(test_gold)}")
     return test_gold
 
@@ -206,7 +184,7 @@ def main():
     args = get_args()
     print(args)
     df = get_test_set(args)
-    run_test(args, df[:10])
+    run_test(args, df)
 
 
 if __name__ == '__main__':
