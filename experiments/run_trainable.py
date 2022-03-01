@@ -2,6 +2,7 @@
 import random
 import json
 import numpy as np
+import pandas as pd
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
@@ -40,7 +41,7 @@ def get_args():
     parser.add_argument('-s', '--split', default='random', help='Path to save the results as csv')
     parser.add_argument('-rs', '--result_suffix', default="", required=False, help='suffix to add to results name')
 
-    parser.add_argument('--model_backend_type', default='vit', help="vit", required=False)
+    parser.add_argument('--model_backend_type', default='vit', help=f"{set(MODELS_MAP.keys())}", required=False)
 
     parser.add_argument("--debug", action='store_const', default=False, const=True)
     parser.add_argument("--multi_gpu", action='store_const', default=False, const=True)
@@ -69,18 +70,31 @@ class Loader(Dataset):
 
     def __getitem__(self, index):
         row = self.data.iloc[index]
+        label = torch.FloatTensor([row.label])
 
-        candidates = eval(row.candidates) + [row.D_img]
-        random.shuffle(candidates)
-        candidates = np.array(candidates)
-        label = torch.from_numpy(np.where(candidates == row.D_img)[0])
         label = label.to(device)
         images_to_load = {'A': row.A_img, 'B': row.B_img, 'C': row.C_img}
+        # input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
+        input_imgs = list(images_to_load.values())
 
-        input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
-        candidate_imgs = [self.backend_model.load_and_process_img(x) for x in candidates]
+        return input_imgs, row.option, label
 
-        return input_imgs, candidate_imgs, label
+    # def __getitem__(self, index):
+    #     row = self.data.iloc[index]
+    #
+    #     candidates = eval(row.candidates) + [row.D_img]
+    #     random.shuffle(candidates)
+    #     candidates = np.array(candidates)
+    #     label = torch.from_numpy(np.where(candidates == row.D_img)[0])
+    #     label = label.to(device)
+    #     images_to_load = {'A': row.A_img, 'B': row.B_img, 'C': row.C_img}
+    #
+    #     # input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
+    #     # candidate_imgs = [self.backend_model.load_and_process_img(x) for x in candidates]
+    #     input_imgs = list(images_to_load.values())
+    #     candidate_imgs = list(candidates)
+    #
+    #     return input_imgs, candidate_imgs, label
 
     def __len__(self):
         return len(self.data)
@@ -129,7 +143,7 @@ def test(backend_model, baseline_model, data, loss_fn):
     print(f"Loading model (epoch_{args.load_epoch}) from {model_path}")
     assert os.path.exists(model_path)
     baseline_model.load_state_dict(torch.load(model_path))
-    baseline_model.eval()
+    baseline_model = baseline_model.eval()
     test_loop(args=args, model=baseline_model, test_loader=test_loader, loss_fn=loss_fn, test_df=data[TEST])
 
 
@@ -145,7 +159,7 @@ def train(backend_model, baseline_model, data, loss_fn):
     loss_fn : Loss function
 
     """
-    optimizer = torch.optim.Adam(baseline_model.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(baseline_model.parameters(), lr=args.lr, weight_decay=0.0001)
     train_dataset = Loader(data[TRAIN], backend_model)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size)
     dev_dataset = Loader(data[DEV], backend_model)
@@ -208,6 +222,9 @@ def test_loop(args, model, test_loader, loss_fn, test_df):
     test_df['labels'] = labels
 
     dump_test_info(args, model_dir_path, all_losses, all_test_accuracy, test_df, epoch=args.load_epoch)
+
+
+nn.BCEWithLogitsLoss()
 
 
 def train_epoch(loss_fn, model, optimizer, train_loader, epoch):
@@ -279,11 +296,11 @@ def test_epoch(loss_fn, model, dev_loader, epoch):
 
     for batch_idx, batch_data in tqdm(enumerate(dev_loader), total=len(dev_loader), desc=f'Testing epoch {epoch}...'):
 
-        y = label.squeeze()
         with torch.no_grad():
 
             input_img, options, label = batch_data
             out = model(input_img, options).squeeze()
+        y = label.squeeze()
 
         if args.debug:
             if batch_idx > 5:
@@ -298,15 +315,37 @@ def test_epoch(loss_fn, model, dev_loader, epoch):
     return epoch_dev_losses, epoch_dev_accuracy, all_predictions, all_labels
 
 
+def create_new_df(df, sufix):
+    res = []
+    for i, row in df.iterrows():
+        candidates = eval(row.candidates) + [row.D_img]
+        for cand in candidates:
+            res.append({'A_img': row.A_img, 'B_img': row.B_img, 'C_img': row.C_img, 'D_img': row.D_img, 'option': cand,
+                        'label': float(cand == row.D_img)})
+    df = pd.DataFrame(res)
+    df.to_csv(f'new_dis_{sufix}.csv')
+    return df
+
+
 def main():
     data = get_split(args)
+    # data[TRAIN] = create_new_df(data[TRAIN],TRAIN)
+    # data[DEV] = create_new_df(data[DEV],DEV)
+    data[TRAIN] = pd.read_csv('new_dis_train.csv')
+    data[DEV] = pd.read_csv('new_dis_dev.csv')
+
     backend_model = BackendModel(args)
     baseline_model = BaselineModel(backend_model, args)
     baseline_model = baseline_model.to(device)
     print(f"Checking baseline model cuda: {next(baseline_model.parameters()).is_cuda}")
     if args.multi_gpu:
         baseline_model = nn.DataParallel(baseline_model)
-    loss_fn = torch.nn.CrossEntropyLoss()
+    # loss_fn = torch.nn.CrossEntropyLoss()
+    # pos_weights = np.array([4, 1])
+    # weights = torch.as_tensor(pos_weights, dtype=torch.float)
+    weights = [4.0]
+    class_weights = torch.FloatTensor(weights).to(device)
+    loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=class_weights)
 
     if args.test_model:
         test(backend_model, baseline_model, data, loss_fn)

@@ -14,12 +14,23 @@ SMALL_TEST_SIZE = 300
 
 # ------------------------------Code--------------------------------
 
+# def calculate_accuracy(out_prob, y):
+#     prob = torch.softmax(out_prob, dim=1)
+#     out_np = prob.detach().cpu().numpy()
+#     labels_np = y.detach().cpu().numpy()
+#     accuracy = (np.argmax(out_np, 1) == labels_np).mean()
+#     predictions = [float(x) for x in np.argmax(out_np, 1)]
+#     labels = [float(x) for x in labels_np]
+#     return accuracy, predictions, labels
 def calculate_accuracy(out_prob, y):
-    prob = torch.softmax(out_prob, dim=1)
+    # prob = torch.softmax(out_prob, dim=1)
+    prob = torch.sigmoid(out_prob)
     out_np = prob.detach().cpu().numpy()
     labels_np = y.detach().cpu().numpy()
-    accuracy = (np.argmax(out_np, 1) == labels_np).mean()
-    predictions = [float(x) for x in np.argmax(out_np, 1)]
+    bool_preds = (out_np >= 0.5)
+    accuracy = (bool_preds == labels_np).mean()
+    predictions = [float(x) for x in out_np]
+
     labels = [float(x) for x in labels_np]
     return accuracy, predictions, labels
 

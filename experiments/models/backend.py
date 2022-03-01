@@ -5,7 +5,7 @@ from PIL import Image
 import os
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
-from experiments.config import IMAGES_PATH
+from config import IMAGES_PATH
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -51,10 +51,34 @@ class BackendModel:
         return img_preprocessed
 
     def forward_core_model(self, img):
-        x = self.backend_model.forward_features(img)
-        if self.model_backend_type == 'convnext':
-            x = self.backend_model.head(x)
+        s = '/Users/eliyahustrugo/PycharmProjects/image_analogies_0/imsitu_data/tensor_data'
+        x = []
+        if not isinstance(img,list):
+            img = list(img)
+        for i in img:
+            i = i.replace('jpg', 'pt')
+            with open(os.path.join(s, i[0], i), 'rb') as f:
+                x.append(torch.load(f))
+
+        x = torch.stack(x).squeeze()
         return x
+    # def forward_core_model(self, img):
+    #     s = '/Users/eliyahustrugo/PycharmProjects/image_analogies_0/imsitu_data/tensor_data'
+    #     x = []
+    #     for i in img:
+    #         i = i.replace('jpg', 'pt')
+    #         with open(os.path.join(s, i[0], i), 'rb') as f:
+    #             x.append(torch.load(f))
+    #
+    #     x = torch.stack(x).squeeze()
+    #     return x
+
+    # def forward_core_model(self, img):
+    #
+    #     x = self.backend_model.forward_features(img)
+    #     if self.model_backend_type == 'convnext':
+    #         x = self.backend_model.head(x)
+    #     return x
 
     def create_timm_model(self, backend_version):
 
