@@ -10,7 +10,7 @@ import os
 import numpy as np
 from PIL import Image
 
-SPLIT = 'test'  # train, dev, test, testdev
+SPLIT = 'test'  # train, testdev
 PARAMS_FOR_SPLIT = {'train': {'MAX_CDS_MATCHES_FOR_AB': 10, 'MAX_CDS_MATCHES_FOR_AB_SAMPLE_FROM': 10, 'MAX_OCC_FOR_EACH_IMAGE_IN_AB_PAIR': 40, 'MAX_CLIP_CD_FILTER': 100},
                     'dev': {'MAX_CDS_MATCHES_FOR_AB': 10, 'MAX_CDS_MATCHES_FOR_AB_SAMPLE_FROM': 10, 'MAX_OCC_FOR_EACH_IMAGE_IN_AB_PAIR': 40, 'MAX_CLIP_CD_FILTER': 100},
                     'testdev': {'MAX_CDS_MATCHES_FOR_AB': 10, 'MAX_CDS_MATCHES_FOR_AB_SAMPLE_FROM': 10, 'MAX_OCC_FOR_EACH_IMAGE_IN_AB_PAIR': 40, 'MAX_CLIP_CD_FILTER': 100},
@@ -23,7 +23,7 @@ BBOX_PCT_THRESHOLD = 0.02
 print(f"*** #### SPLIT: {SPLIT}, PARAMS_FOR_SPLIT: {PARAMS_FOR_SPLIT[SPLIT]} ### ***")
 
 imsitu_path = r'C:\devel\image_analogies\imSitu'
-swig_path = r'C:\devel\swig\SWiG_jsons'
+swig_path = r'C:\devel\vasr\dataset\assets\splits'
 swig_images_path = r'C:\devel\swig\images\images_512'
 
 distractors_cache_path = os.path.join(imsitu_path, 'analogies_outputs', 'data', 'aggregate', f"distractors_cache_{SPLIT}.pickle")

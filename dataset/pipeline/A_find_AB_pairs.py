@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-# The split should be train, dev or train to run this file
+# The split should be train and testdev
 
 from dataset.config import AB_matches_path, imsitu_path, SPLIT, swig_path, columns_to_serialize, BAD_IMAGES, \
     get_difference

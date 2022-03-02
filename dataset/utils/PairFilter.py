@@ -11,17 +11,6 @@ from contextlib import contextmanager
 
 class TimeoutException(Exception): pass
 
-@contextmanager
-def time_limit(seconds):
-    def signal_handler(signum, frame):
-        raise TimeoutException("Timed out!")
-    signal.signal(signal.SIGALRM, signal_handler)
-    signal.alarm(seconds)
-    try:
-        yield
-    finally:
-        signal.alarm(0)
-
 class PairsFilter(object):
     def __init__(self):
         relevant_keys = ['diff_item_A_str_first', 'diff_item_B_str_first']
@@ -74,8 +63,7 @@ class PairsFilter(object):
 
     def is_legit_object_change(self, t):
         try:
-            with time_limit(5):
-                return self.is_legit_object_change_inner(t)
+            return self.is_legit_object_change_inner(t)
         except TimeoutException as e:
             print(f"Timed out!, {t}")
         return False
