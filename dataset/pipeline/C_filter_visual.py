@@ -7,8 +7,8 @@ import cv2
 import pandas as pd
 
 from dataset.utils.visualization import visualize_pair
+from dataset.config import imsitu_path
 
-imsitu_path = '/data/users/yonatab/analogies/imSitu'
 imsitu = json.load(open(os.path.join(imsitu_path, "imsitu_space.json")))
 nouns = imsitu["nouns"]
 from dataset.config import AB_matches_filtered_textual, AB_matches_filtered_visual, swig_images_path, swig_path, \
