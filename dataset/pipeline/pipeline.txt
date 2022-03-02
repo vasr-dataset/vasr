@@ -1,4 +1,4 @@
-# For each SPLIT in ['train', 'testdev']
+# For each SPLIT in ['train', 'testdev'] - Not working with testdev see below
 python src_dataset_generation/A_find_AB_pairs.py
 python src_dataset_generation/B_filter_textual.py
 python src_dataset_generation/C_filter_visual.py
@@ -14,6 +14,7 @@ python merge_clip_VL_feats_for_distractors_filter.py # if ran CLIP extract with 
 python src_dataset_generation/J_classify_and_pack_distractors.py
 python src_dataset_generation/K_pack_splits_with_random_images.py
 L ?
+M ?
 
 
 open
