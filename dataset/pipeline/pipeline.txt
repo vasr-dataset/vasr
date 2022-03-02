@@ -1,0 +1,28 @@
+# For each SPLIT in ['train', 'testdev']
+python src_dataset_generation/A_find_AB_pairs.py
+python src_dataset_generation/B_filter_textual.py
+python src_dataset_generation/C_filter_visual.py
+
+python merge_clip_VL_feats_for_AB_filter.py # if ran CLIP extract with multiple processes, merge the feats with this
+python src_dataset_generation/E_process_and_save_AB_pairs.py
+python src_dataset_generation/F_find_CD_pairs.py -V
+python src_dataset_generation/G_create_train_full_and_ood.py - G_create-splits ?
+H ?
+# For each SPLIT in ['train', 'dev', 'test]
+python src_dataset_generation/I_extract_clip_features_for_distractors.py
+python merge_clip_VL_feats_for_distractors_filter.py # if ran CLIP extract with multiple processes, merge the feats with this - X
+python src_dataset_generation/J_classify_and_pack_distractors.py
+python src_dataset_generation/K_pack_splits_with_random_images.py
+L ?
+
+
+open
+What should we do merge_clip_VL files ?
+---
+D_filter_vision_and_language.py ?
+python src_dataset_generation/D_filter_vision_and_language.py EXTRACT=True
+python src_dataset_generation/D_filter_vision_and_language.py EXTRACT=False # (This is classifying AB pairs)
+I changed Extract to true default and added classify_df_given_feats() at the end.
+---
+run_gsr_solver ?
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\devel\\swig\\SWiG_jsons\\testdev.json' ?
