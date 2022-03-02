@@ -17,7 +17,6 @@ L ?
 
 
 TODO:
-testdev should be {**test_split, **dev_split}, combine and add to repository all JSONS
 should remove merge_clip_VL_feats_for_AB_filter.py
 D_filter_vision_and_language + I_extract_clip_features_for_distractors = The CLIP feature extraction takes a lot of time because there are many image pairs.
 We executed it in multi-process for different subsets and merged the features later with this code.
