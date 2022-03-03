@@ -22,6 +22,7 @@ SMALL_TEST_SIZE = 300
 #     predictions = [float(x) for x in np.argmax(out_np, 1)]
 #     labels = [float(x) for x in labels_np]
 #     return accuracy, predictions, labels
+
 def calculate_accuracy(out_prob, y):
     # prob = torch.softmax(out_prob, dim=1)
     prob = torch.sigmoid(out_prob)
@@ -34,6 +35,15 @@ def calculate_accuracy(out_prob, y):
     labels = [float(x) for x in labels_np]
     return accuracy, predictions, labels
 
+def calculate_accuracy_test(y_pred, y):
+
+    out_np = y_pred.detach().cpu().numpy()
+    labels_np = y.detach().cpu().numpy()
+    accuracy = (out_np == labels_np).mean()
+    predictions = [float(x) for x in out_np]
+
+    labels = [float(x) for x in labels_np]
+    return accuracy, predictions, labels
 
 def save_model(model_dir_path, epoch, model, dev_accuracy_list):
     out_p = os.path.join(model_dir_path, f"epoch_{epoch}.pth")

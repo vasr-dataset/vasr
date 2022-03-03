@@ -10,7 +10,7 @@ from tqdm import tqdm
 from utills import get_split
 import argparse
 import os
-from utills import save_model, dump_test_info, dump_train_info, calculate_accuracy
+from utills import save_model, dump_test_info, dump_train_info, calculate_accuracy, calculate_accuracy_test
 from config import TRAIN, DEV, TRAIN_RESULTS_PATH, TEST, FEW_SHOT_DATA_SAMPLES, MODELS_MAP
 from models.backend import BackendModel
 from models.trainable import BaselineModel
@@ -64,20 +64,41 @@ def get_args():
 # ------------------------------DataLoader--------------------------------
 
 class Loader(Dataset):
-    def __init__(self, data, backend_model):
+    def __init__(self, data, backend_model, train=True):
         self.data = data
         self.backend_model = backend_model
+        self.train = train
 
     def __getitem__(self, index):
         row = self.data.iloc[index]
-        label = torch.FloatTensor([row.label])
+        if self.train:
+            label = torch.FloatTensor([row.label])
 
-        label = label.to(device)
-        images_to_load = {'A': row.A_img, 'B': row.B_img, 'C': row.C_img}
-        # input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
-        input_imgs = list(images_to_load.values())
+            label = label.to(device)
+            images_to_load = {'A': row.A_img, 'B': row.B_img, 'C': row.C_img}
+            # input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
+            input_imgs = list(images_to_load.values())
 
-        return input_imgs, row.option, label
+            return input_imgs, row.option, label
+        else:
+
+            candidates = eval(row.candidates) + [row.D_img]
+            random.shuffle(candidates)
+            label_name = row.D_img if "workers_most_common_answer" not in row else row.workers_most_common_answer
+            candidates = np.array(candidates)
+            label = torch.from_numpy(np.where(candidates == label_name)[0])
+            label = label.to(device)
+            images_to_load = {'A': row.A_img, 'B': row.B_img, 'C': row.C_img}
+
+            # input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
+            # candidate_imgs = [self.backend_model.load_and_process_img(x) for x in candidates]
+            input_imgs = list(images_to_load.values())
+            candidate_imgs = list(candidates)
+
+            return input_imgs, candidate_imgs, label
+
+    def __len__(self):
+        return len(self.data)
 
     # def __getitem__(self, index):
     #     row = self.data.iloc[index]
@@ -96,8 +117,7 @@ class Loader(Dataset):
     #
     #     return input_imgs, candidate_imgs, label
 
-    def __len__(self):
-        return len(self.data)
+
 
 
 # ------------------------------Code--------------------------------
@@ -136,7 +156,7 @@ def test(backend_model, baseline_model, data, loss_fn):
 
     """
     print('*** testing ***')
-    test_dataset = Loader(data[TEST], backend_model)
+    test_dataset = Loader(data[TEST], backend_model, train=False)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size)
     model_dir_path = get_experiment_dir(args)
     model_path = os.path.join(model_dir_path, f'epoch_{args.load_epoch}.pth')
@@ -159,10 +179,10 @@ def train(backend_model, baseline_model, data, loss_fn):
     loss_fn : Loss function
 
     """
-    optimizer = torch.optim.Adam(baseline_model.parameters(), lr=args.lr, weight_decay=0.0001)
+    optimizer = torch.optim.Adam(baseline_model.parameters(), lr=args.lr)
     train_dataset = Loader(data[TRAIN], backend_model)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size)
-    dev_dataset = Loader(data[DEV], backend_model)
+    dev_dataset = Loader(data[DEV], backend_model, train=False)
     dev_loader = DataLoader(dev_dataset, batch_size=args.batch_size)
     train_loop(args=args, model=baseline_model, optimizer=optimizer, train_loader=train_loader, dev_loader=dev_loader, loss_fn=loss_fn,
                n_epoch=args.n_epochs)
@@ -222,9 +242,6 @@ def test_loop(args, model, test_loader, loss_fn, test_df):
     test_df['labels'] = labels
 
     dump_test_info(args, model_dir_path, all_losses, all_test_accuracy, test_df, epoch=args.load_epoch)
-
-
-nn.BCEWithLogitsLoss()
 
 
 def train_epoch(loss_fn, model, optimizer, train_loader, epoch):
@@ -297,17 +314,21 @@ def test_epoch(loss_fn, model, dev_loader, epoch):
     for batch_idx, batch_data in tqdm(enumerate(dev_loader), total=len(dev_loader), desc=f'Testing epoch {epoch}...'):
 
         with torch.no_grad():
-
+            scores = []
             input_img, options, label = batch_data
-            out = model(input_img, options).squeeze()
+            for option in options:
+                out = model(input_img, option).squeeze()
+                scores.append(out)
+        s = torch.stack(scores)
+        out = torch.argmax(s, dim=0)
         y = label.squeeze()
 
         if args.debug:
             if batch_idx > 5:
                 break
-        loss = loss_fn(out, y)
-        accuracy, predictions, labels = calculate_accuracy(out, y)
-        epoch_dev_losses.append(loss.item())
+        # loss = loss_fn(out, y)
+        accuracy, predictions, labels = calculate_accuracy_test(out, y)
+        # epoch_dev_losses.append(loss.item())
         epoch_dev_accuracy.append(accuracy)
         all_predictions += predictions
         all_labels += labels
@@ -331,8 +352,8 @@ def main():
     data = get_split(args)
     # data[TRAIN] = create_new_df(data[TRAIN],TRAIN)
     # data[DEV] = create_new_df(data[DEV],DEV)
-    data[TRAIN] = pd.read_csv('new_dis_train.csv')
-    data[DEV] = pd.read_csv('new_dis_dev.csv')
+    data[TRAIN] = pd.read_csv('/Users/eliyahustrugo/PycharmProjects/vasr/experiments/new_dis_train.csv')
+    # data[DEV] = pd.read_csv('/Users/eliyahustrugo/PycharmProjects/vasr/experiments/new_dis_dev.csv')
 
     backend_model = BackendModel(args)
     baseline_model = BaselineModel(backend_model, args)
@@ -345,7 +366,7 @@ def main():
     # weights = torch.as_tensor(pos_weights, dtype=torch.float)
     weights = [4.0]
     class_weights = torch.FloatTensor(weights).to(device)
-    loss_fn = torch.nn.BCEWithLogitsLoss(pos_weight=class_weights)
+    loss_fn = torch.nn.BCEWithLogitsLoss()
 
     if args.test_model:
         test(backend_model, baseline_model, data, loss_fn)

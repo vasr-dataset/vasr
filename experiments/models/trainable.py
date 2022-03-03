@@ -43,9 +43,9 @@ class BaselineModel(nn.Module):
             # )
             self.classifier = nn.Sequential(
                 nn.LayerNorm(pair_embed_dim),
-                nn.Linear(pair_embed_dim, 384),
+                nn.Linear(pair_embed_dim, 256),
                 nn.ReLU(),
-                nn.Linear(384, 1)
+                nn.Linear(256, 1)
             )
         else:
             print(f'BUILDING CHEAP BACKEND')
