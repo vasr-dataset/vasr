@@ -25,21 +25,39 @@ See [our paper](https://www.google.co.il/) for details, and the [dataset webpage
 #### 2. Download [SWIG project](https://github.com/swig/swig) and change the path in config file accordingly.
 #### 3. Change the `SPLIT` variable in the config.py to the desire split (train, testdev).
 
+**Convention**: In the paper we use A:A' :: B:B', in the code we use A:B :: C:D. 
 
 ## Pipeline 
-#### 1. A
-#### 1. B
-#### 1. C
-#### 1. D
-#### 1. E
-#### 1. F
-#### 1. G
-#### 1. H
-#### 1. I
-#### 1. J
-#### 1. K
-#### 1. L
+#### 1. `A_find_AB_pairs.py`
+Finding images A:A' that are annotated the same, except of a single different role (Section 3.1 in the paper: Finding Analogous Situations in imSitu). 
 
+#### 2. `B_textual_filter.py`
+Textual filter that leverages WordNet and FrameNet to filter ambiguous image pairs (Section 3.3, Over-specified annotations). 
 
+#### 3. `C_filter_visual.py`
+Visual filter that leverages SWiG to filter to filter images with non visually salient object (Section 3.3, Over-specified annotations). 
 
+#### 4. `D_extract_clip_features.py`
+CLIP based vision-and-language filter that filters ambiguous image pairs (Section 3.3, Under-specified annotations). 
+We aim to filter cases of such ambiguity, where an object can describe the _other_ image bounding box.
 
+#### 5. `E_classify_ambiguous_image_pairs.py`
+Same description as before. `D_extract_clip_features.py` is used for extraction, and `E_classify_ambiguous_image_pairs.py` for the filtering given the extracted features. 
+
+#### 6. `F_process_and_save_ab_pairs.py`
+Save in cache all of the filtered A:B pairs. In next step we iterate on it to find C:D pairs. 
+
+#### 7. `H_create_splits.py` 
+Creating the final data, composing train, dev, and test splits (Sections 3.4 Building the Test Set + 3.6 Final Datasets and Statistics). 
+
+#### 8. `I_extract_candidates_for_clip_filter.py`
+Extracting candidates to difficult distractors (Section 3.2 Choosing Difficult Distractors). 
+
+#### 9. `J_extract_clip_features_for_distractors.py`
+Extracting CLIP features to the received distractors candidates.
+
+#### 10. `K_classify_and_pack_distractors.py`
+Choosing the final distractors by filtering the ambiguous distractors (Section 3.3, Under-specified annotations).
+
+#### 11. `L_pack_splits_with_random_images.py`
+Chossing random distractors.
