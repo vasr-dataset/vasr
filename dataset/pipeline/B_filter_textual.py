@@ -47,12 +47,8 @@ def main():
     df_filtered['num_frames_with_single_diff'] = df_filtered['frames_with_single_diff'].apply(lambda x: len(x))
     print(df_filtered['num_frames_with_single_diff'].value_counts())
     df_filtered = df_filtered[df_filtered['num_frames_with_single_diff'] <= 2]  # >91% of the data
-    # plot_pairs(df_filtered_before_filter, df_filtered)
     print(f"*** multiple AB changes started with {len(df_filtered_before_filter)} and received {len(df_filtered)}, which is {round(len(df_filtered)/len(df_filtered_before_filter) * 100, 2)}")
     df = df_filtered
-
-    # specific_df = df.query('diff_item_A_str_first == "jockey" and diff_item_B_str_first == "horseman"').iloc[0]
-    # print_most_common_different_keys(specific_df)
 
     len_start_df = len(df)
     print(df['different_key'].value_counts())
@@ -66,8 +62,6 @@ def main():
                        'len_df_without_co_agent': len_df_without_co_agent, 'len_df_without_intersecting_words_list': len_df_without_intersecting_words_list}
     print(df_length_stats)
 
-    # df[df['diff_item_A_str_first'] == 'leopard']['A_data'].apply(lambda x: x['A']['agent'])
-    # offset = str(wn_x.offset()).zfill(8) + '-' + wn_x.pos()
     pairs_for_key_dict = create_legit_pairs_by_rules(df, nouns, verbs)
 
     df_filtered = filter_by_legit_pairs_and_sample(df, pairs_for_key_dict)
@@ -76,52 +70,7 @@ def main():
         dump_filtered_AB_pairs(df_filtered)
 
 
-
-def plot_pairs(df_filtered_before_bbox, df_filtered_before_bbox_after_taking_only_few_cases):
-    the_filtered_data_really_bad = df_filtered_before_bbox[df_filtered_before_bbox['num_frames_with_single_diff'] > 6]
-    the_filtered_data_zero_changes_sample = df_filtered_before_bbox[df_filtered_before_bbox['num_frames_with_single_diff'] == 0].sample(10)
-    the_filtered_data_maybe_ambiguious = df_filtered_before_bbox[
-        df_filtered_before_bbox['num_frames_with_single_diff'] == 3]
-    the_filtered_data_really_bad_sample = the_filtered_data_really_bad.sample(5)
-    the_filtered_data_maybe_ambiguious_sample = the_filtered_data_maybe_ambiguious.sample(5)
-
-    print(f"Zero Changes")
-    for _, p in the_filtered_data_zero_changes_sample.sample(5).iterrows():
-        print(f"frames_with_single_diff: {len(p['frames_with_single_diff'])}")
-        print(p['frames_with_single_diff'])
-        visualize_pair(p, plot_annotations=False)
-
-    print(f"Data Kept")
-    for _, p in df_filtered_before_bbox_after_taking_only_few_cases.sample(5).iterrows():
-        print(f"frames_with_single_diff: {len(p['frames_with_single_diff'])}")
-        print(p['frames_with_single_diff'])
-        visualize_pair(p, plot_annotations=False)
-
-    print(f"\n\nREALLY BAD")
-    for _, p in the_filtered_data_really_bad_sample.iterrows():
-        print(p['frames_with_single_diff'])
-        visualize_pair(p, plot_annotations=False)
-    print(f"\n\nMaybe Ambiguious")
-    for _, p in the_filtered_data_maybe_ambiguious_sample.iterrows():
-        print(p['frames_with_single_diff'])
-        visualize_pair(p, plot_annotations=False)
-
-
-def plot_by_query(r):
-    # r = df.query('diff_item_A_str_first == "glass"').iloc[0][['A_img', 'B_img', 'diff_item_A_str_first', 'diff_item_B_str_first']]
-    img_A = cv2.imread(os.path.join(imsitu_images_path, r['A_img']))[:,:,::-1]
-    img_B = cv2.imread(os.path.join(imsitu_images_path, r['B_img']))[:,:,::-1]
-    fig, axs = plt.subplots(1, 2)
-    axs[0].imshow(img_A)
-    axs[0].set_title(r['diff_item_A_str_first'])
-    axs[1].imshow(img_B)
-    axs[1].set_title(r['diff_item_B_str_first'])
-    plt.show()
-
 def read_full_df():
-    # print(f"--- Taking head 10K ---")
-    # df = pd.read_csv(AB_matches_path)
-    # df = df.sample(10000)
     df = pd.read_csv(AB_matches_path)
     for c in columns_to_serialize:
         if c in df.columns:
@@ -161,26 +110,16 @@ def create_legit_pairs_by_rules(df, nouns, verbs):
         changed_pairs_wn_for_key = [x[0] for x in changed_pairs_counter_wn_for_key.most_common()]
         legit_pairs_for_k = []
         for t_idx, t in enumerate(changed_pairs_wn_for_key):
-            # if t_idx > 100:
-            #     continue
-            # if t_idx == 469:
-            #     print("H")
             is_legit_k_chagnge = pairs_filter.is_legit_k_chagnge(k, t)
             if DEV_ANALOGIES_PAIRS:
                 print(f"t_idx: {t_idx}/{len(changed_pairs_wn_for_key)}, {t[:2], is_legit_k_chagnge}")
-                # x, y = t[:2]
-                # x_v = verbs[x]
-                # y_v = verbs[y]
-                # print(f"t_idx: {t_idx}/{len(changed_pairs_wn_for_key)}, {t[:2], is_legit_k_chagnge}\nx_v: {x_v}, y_v: {y_v}\n\n")
 
-        # print()
             if is_legit_k_chagnge:
                 # if man->monkey, then monkey->man
                 t_reverse = (t[1], t[0], t[3], t[2])
                 legit_pairs_for_k.append(t)
                 legit_pairs_for_k.append(t_reverse)
 
-        # pairs_for_key_dict[k] = [x[0] for x in changed_pairs_counter_for_key.most_common(whitelist_num_changes)]
         print(f"*** for key {k}, started with {len(changed_pairs_wn_for_key) * 2}, filtered to {len(legit_pairs_for_k)}")
         initial_pairs_support = sum({k:v for k,v in changed_pairs_counter_wn_for_key.items()}.values())
         legit_pairs_support = sum({k:v for k,v in changed_pairs_counter_wn_for_key.items() if k in legit_pairs_for_k}.values())
@@ -204,8 +143,6 @@ def create_legit_pairs_by_rules(df, nouns, verbs):
 
     return pairs_for_key_dict
 
-def take_only_filtered_agents_places_and_verbs(r, pairs_for_key_dict_agent_place_verb):
-    return True
 
 def filter_by_legit_pairs_and_sample(df, pairs_for_key_dict):
     print(f"filter_by_legit_pairs_and_sample...")
@@ -222,47 +159,11 @@ def filter_by_legit_pairs_and_sample(df, pairs_for_key_dict):
     df_examples_for_poc = df_filtered_relevant_keys[df_filtered_relevant_keys['change_triplet'].isin(change_triplets_set)]
     print(f"Filtered by pairs. Got {len(df_examples_for_poc)} from {len(df_filtered_relevant_keys)}")
 
-    # df_examples_for_poc_orig = pd.DataFrame()
-    # for diff_key, diff_key_pairs in pairs_for_key_dict.items():
-    #     for pair in diff_key_pairs:
-    #         df_with_changed_pair = df_filtered_relevant_keys.query(
-    #             f'diff_item_A_str_first == "{pair[0]}" and diff_item_B_str_first == "{pair[1]}"')
-    #         """ The sample should include the most varied items of agent and place."""
-    #
-    #         # sampled_examples_for_changed_pair = sample_examples_for_pair_by_random_sample(MAX_EXAMPLES_FROM_EACH_AB_PAIR, df_with_changed_pair)
-    #         # sampled_examples_for_changed_pair = sample_examples_for_pair_by_maximizing_agent_place_verb_pairs(df_with_changed_pair, diff_key)
-    #         df_examples_for_poc_orig = pd.concat([df_examples_for_poc_orig, df_with_changed_pair])
-
     print(f'Different keys value counts')
     print(df_examples_for_poc['different_key'].value_counts())
 
     return df_examples_for_poc
 
-
-def sample_examples_for_pair_by_maximizing_agent_place_verb_pairs(relevant_df, diff_key):
-    pairs_occ_reversed = relevant_df[['A_agent', 'A_verb']].value_counts().iloc[::-1]
-    if diff_key in ['agent', 'verb']:
-        pairs_occ_reversed_threshold = pairs_occ_reversed.median()
-    else:
-        pairs_occ_reversed_threshold = pairs_occ_reversed.quantile(0.95)
-    df_examples_for_agent_place_verb_pairs = pd.DataFrame()
-    for agent_place_pair, agent_place_verb_pair_occs in pairs_occ_reversed.iteritems():
-        sample_from_pair = int(min(pairs_occ_reversed_threshold, agent_place_verb_pair_occs))
-        relevant_df_agent_place_verb = relevant_df.query(
-            f'A_agent == "{agent_place_pair[0]}" and A_place == "{agent_place_pair[1]}" and A_verb == "{agent_place_pair[2]}"')
-        relevant_df_agent_place_verb_sample = relevant_df_agent_place_verb.sample(sample_from_pair)
-        df_examples_for_agent_place_verb_pairs = pd.concat(
-            [df_examples_for_agent_place_verb_pairs, relevant_df_agent_place_verb_sample])
-    return df_examples_for_agent_place_verb_pairs
-
-
-def sample_examples_for_pair_by_random_sample(MAX_EXAMPLES_FROM_EACH_AB_PAIR,
-                                  relevant_df):
-    if len(relevant_df) > MAX_EXAMPLES_FROM_EACH_AB_PAIR:
-        relevant_df_sampled = relevant_df.sample(MAX_EXAMPLES_FROM_EACH_AB_PAIR)
-    else:
-        relevant_df_sampled = relevant_df
-    return relevant_df_sampled
 
 def dump_filtered_AB_pairs(df_filtered):
     for c in columns_to_serialize:
@@ -276,22 +177,6 @@ def dump_filtered_AB_pairs(df_filtered):
     print("Done")
 
 
-def print_most_common_different_keys(df):
-    # total_sum = sum(df['different_key'].value_counts().values)
-    # different_key_pct = df['different_key'].value_counts().apply(lambda x: str(round(x / total_sum * 100, 3)) + "%")
-    NUM_MOST_COMMON = 30
-    for different_key in df['different_key'].value_counts().keys()[:NUM_MOST_COMMON]:
-        if different_key == 'verb':
-            different_key_list_A = list(df[df['different_key'] == different_key]['diff_item_A_str'].values)
-            different_key_list_B = list(df[df['different_key'] == different_key]['diff_item_B_str'].values)
-        else:
-            different_key_list_A = list(
-                df[df['different_key'] == different_key]['diff_item_A_str'].apply(lambda l: l[0]).values)
-            different_key_list_B = list(
-                df[df['different_key'] == different_key]['diff_item_B_str'].apply(lambda l: l[0]).values)
-        different_key_counter = Counter(different_key_list_A + different_key_list_B)
-        print(different_key)
-        print(different_key_counter.most_common(NUM_MOST_COMMON))
 
 def words_lists_intersect(l1, l2, diff_key):
     if diff_key == 'verb':
@@ -329,18 +214,9 @@ def get_a_b_diffs_set_str(r, data_split):
                             v1 = nouns[a_frame[shared_key_but_not_val_key]]['gloss'][0]
                     else:
                         v1, v2 = a_frame[shared_key_but_not_val_key], b_frame[shared_key_but_not_val_key]
-                    # a_b_frames_with_single_diffs.append((a_frame, b_frame))
                     a_b_frames_with_single_diffs.append((k, v1, v2))
     return set(a_b_frames_with_single_diffs)
 
-def check_frames_diff(first_frame, second_frame):
-    diff = []
-    a_b_diff = dict(set(first_frame.items()) - set(second_frame.items()))
-    b_a_diff = dict(set(second_frame.items()) - set(first_frame.items()))
-    # Checking that the diff of A B and B A is same
-    for key in (a_b_diff.keys() & b_a_diff.keys()):
-        diff.append({'feature': key, 'first_frame_diff': a_b_diff[key], 'second_frame_diff': b_a_diff[key]})
-    return diff
 
 if __name__ == '__main__':
     main()
