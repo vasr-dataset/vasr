@@ -10,8 +10,6 @@ from tqdm import tqdm
 
 from dataset.config import imsitu_path, SPLIT, get_dict_sim
 
-# path = '/data/users/yonatab/analogies/imSitu/analogies_outputs/data/split_distractors/analogies_distractors_test_final_no_ambiguity.csv'
-# path = f'/data/users/yonatab/analogies/imSitu/analogies_outputs/data/split_distractors/analogies_distractors_{SPLIT}_final.csv'
 path = '/data/users/yonatab/analogies/imSitu/analogies_outputs/data/split_distractors/analogies_distractors_test_final.csv'
 
 def solve_analogy(r, data_split):
@@ -140,6 +138,7 @@ def solve_analogy_all_frames_given_distractor(r, data_split, distractor):
     # print(f"D: {r['D_img']}, sol: {solution_cand}")
     return False
 
+
 def observe_d_sim(r, data_split):
     all_sims = []
     for dist in r['distractors']:
@@ -150,6 +149,7 @@ def observe_d_sim(r, data_split):
                 max_sim_for_dist = sim
         all_sims.append(max_sim_for_dist)
     return all_sims, max(all_sims)
+
 
 if __name__ == '__main__':
 

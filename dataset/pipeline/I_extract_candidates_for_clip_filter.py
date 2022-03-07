@@ -1,13 +1,11 @@
 import json
 from collections import defaultdict
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 import random
 from copy import deepcopy
 from itertools import combinations
 
-import cv2
 import pandas as pd
 import pickle
 from tqdm import tqdm
@@ -29,7 +27,6 @@ cases_with_filtered_solution = 0
 distractor_solver_clashes_d = 0
 debug_plot_candidates = False
 
-# MAX_NUM_CANDIDATES = 5
 MAX_NUM_CANDIDATES = 10
 print(f'MAX_NUM_CANDIDATES: {MAX_NUM_CANDIDATES}')
 
@@ -73,7 +70,6 @@ def main(split_file_name):
     print(f"cases_with_pos_sim: {cases_with_pos_sim}, cases_with_filtered_solution: {cases_with_filtered_solution}, clash_with_d_counter: {clash_with_d_counter}, distractor_solver_clashes_d: {distractor_solver_clashes_d}, distractors_stats: {distractors_stats}")
     all_ABCD_matches_df['B_distractors_data'] = all_B_distractors_data
     all_ABCD_matches_df['C_distractors_data'] = all_C_distractors_data
-    # all_ABCD_matches_df['candidates'] = all_ABCD_matches_df.apply(lambda r: get_random_images(r, split_images), axis=1)
     print(all_ABCD_matches_df['different_key'].value_counts())
     for c in columns_to_serialize:
         if c in all_ABCD_matches_df:
@@ -371,6 +367,7 @@ def get_items_by_tuples_heuristic(ann_diff_key, annotations, diff_key, distracto
     else:
         choose_tuple['false'] += 1
     return items_with_existing_tup_singles, concat_items_with_existing_tup_tuples_not_intersected, got_tuple
+
 
 if __name__ == '__main__':
     for split_file_name in split_to_files[SPLIT]:

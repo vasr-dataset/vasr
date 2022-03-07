@@ -72,15 +72,8 @@ def main():
             random.shuffle(change_list)
 
             for cd_idx, cd_data in enumerate(change_list):
-                # if SPLIT == 'test' and ab_idx >= cd_idx: # Not allowing duplicate pairs AB->CD => CD->AB
-                #     continue
                 total_idx += 1
-                # if total_idx % 10000 == 0 and total_idx > 100:
-                #     global counter_times
-                #     print(total_idx, {k: np.mean(v) for k,v in counter_times.items()})
-                #     print(total_idx, {k: np.mean(v[-500:]) for k,v in counter_times.items()})
                 bool_replacable = img_CD_can_replace_AB(ab_data, cd_data, data_split, appearences_for_images, pairs_filter, ab_idx, cd_idx, total_idx)
-                # bool_replacable = True
                 if bool_replacable:
                     CD_matches_for_AB_pair.append(cd_data)
                     if len(CD_matches_for_AB_pair) > PARAMS_FOR_SPLIT[SPLIT]['MAX_CLIP_CD_FILTER']:
@@ -92,8 +85,6 @@ def main():
                 else:
                     CD_matches_for_AB_pair_best_cd_pairs = CD_matches_for_AB_pair
                 add_matches_to_analogies_list(ab_data, CD_matches_for_AB_pair_best_cd_pairs, all_ABCD_matches, appearences_for_images)
-                # print(f"different images: {len(appearences_for_images)}")
-                # print(Counter(appearences_for_images).most_common(5))
                 top_common_d = dict([(i, x[1]) for i, x in enumerate(Counter(appearences_for_images).most_common(5))])
                 for k, v in top_common_d.items():
                     top_common_images[k].append(v)
@@ -159,9 +150,6 @@ def add_matches_to_analogies_list(ab_data, CD_matches_for_AB_pair, all_ABCD_matc
         appearences_for_images[ABCD_match['B_img']] += 1
         appearences_for_images[ABCD_match['C_img']] += 1
         appearences_for_images[ABCD_match['D_img']] += 1
-        out_p = os.path.join(analogies_plots_path, f'{len(all_ABCD_matches)}.png')
-        # visualize_analogy(ABCD_match, out_p)
-        # print(out_p)
 
 
 def sample_relevant_cds(CD_matches_for_AB_pair, ab_data):
@@ -171,10 +159,6 @@ def sample_relevant_cds(CD_matches_for_AB_pair, ab_data):
         chosen_CD_matches_for_AB_pair = random.sample(CD_matches_for_AB_pair, MAX_CDS_MATCHES_FOR_AB) if len(
             CD_matches_for_AB_pair) > MAX_CDS_MATCHES_FOR_AB else CD_matches_for_AB_pair
     else:
-        # for cd_data in CD_matches_for_AB_pair:
-        #     cd_data['verb_similarity_to_AB'] = get_verbs_similarity_for_row(ab_data, cd_data)
-        # CD_matches_for_AB_pair_sorted = sorted(CD_matches_for_AB_pair, key=lambda d: d['verb_similarity_to_AB'])
-
         chosen_CD_matches_for_AB_pair = random.sample(CD_matches_for_AB_pair, MAX_CDS_MATCHES_FOR_AB) if len(
             CD_matches_for_AB_pair) > MAX_CDS_MATCHES_FOR_AB else CD_matches_for_AB_pair
     return chosen_CD_matches_for_AB_pair
@@ -203,11 +187,9 @@ def all_a_c_keys_are_different_except_diff_key(ab_data, cd_data):
     x, y = A_dict_cpy, C_dict_cpy
     shared_items = {k: x[k] for k in x if k in y and x[k] == y[k]}
     if len(shared_items) == 0:
-    # if len(shared_items) <= 1:
         counter_last_cond['success'] += 1
         return True
     return False
-
 
 
 def img_CD_can_replace_AB(ab_data, cd_data, data_split, appearences_for_images, pairs_filter, ab_idx, cd_idx, total_idx):
@@ -220,7 +202,6 @@ def img_CD_can_replace_AB(ab_data, cd_data, data_split, appearences_for_images, 
 
     diff_data is actually the existing AB. r is the row fow CD candidates.
     """
-    start = time.time()
     if ab_data['different_key'] != 'verb':
         if ab_data['A_verb'] == cd_data['A_verb']:
             return False
@@ -243,7 +224,6 @@ def img_CD_can_replace_AB(ab_data, cd_data, data_split, appearences_for_images, 
     global counter_last_cond
     counter_last_cond['b4'] += 1
 
-    # new_bool = A_is_different_than_C_in_the_other_keys_by_equality(ab_data, cd_data)
     new_bool = all_a_c_keys_are_different_except_diff_key(ab_data, cd_data)
     global counter_CD_replaces_AB
 
@@ -256,137 +236,6 @@ def img_CD_can_replace_AB(ab_data, cd_data, data_split, appearences_for_images, 
         return False
 
     return True
-
-
-def A_is_different_than_C_in_the_other_keys(ab_data, cd_data, pairs_filter):
-    global counter_last_cond
-    counter_last_cond['in'] += 1
-    try:
-        agent_pair_tuple, place_pair_tuple, verb_pair_tuple = get_agent_place_verb_tuple(ab_data, cd_data)
-    except:
-        return False
-    if agent_pair_tuple is None:
-        return True
-    if ab_data['different_key'] == 'verb':
-        if not pairs_filter.is_legit_object_change(agent_pair_tuple):
-            return False
-        if not pairs_filter.is_legit_place_change(place_pair_tuple):
-            return False
-    elif ab_data['different_key'] == 'place':
-        if not pairs_filter.is_legit_object_change(agent_pair_tuple):
-            return False
-        if not pairs_filter.is_legit_verb_change(verb_pair_tuple):
-            return False
-    elif ab_data['different_key'] == 'agent':
-        if not pairs_filter.is_legit_place_change(place_pair_tuple):
-            return False
-        if not pairs_filter.is_legit_verb_change(verb_pair_tuple):
-            return False
-    counter_last_cond['success'] += 1
-    return True
-
-
-def get_agent_place_verb_tuple(ab_data, cd_data):
-    A_data = ab_data['A_data']
-    C_data = cd_data['A_data']
-    if 'agent' not in A_data['A'] or 'agent' not in C_data['A']:
-        print(f"No agent!!!")
-        print(A_data['A'])
-        print(C_data['A'])
-        return None, None, None
-    A_agent = A_data['A']['agent']
-    A_agent_str = A_data['A_str']['agent'][0]
-    A_place = A_data['A']['place']
-    A_place_str = A_data['A_str']['place'][0] if A_data['A_str']['place'] is not None else None
-    C_agent = C_data['A']['agent']
-    C_agent_str = C_data['A_str']['agent'][0]
-    C_place = C_data['A']['place']
-    C_place_str = C_data['A_str']['place'][0] if C_data['A_str']['place'] is not None else None
-    A_verb = A_data['A_verb']
-    C_verb = C_data['A_verb']
-    agent_pair_tuple = (A_agent_str, C_agent_str, A_agent, C_agent)
-    place_pair_tuple = (A_place_str, C_place_str, A_place, C_place)
-    verb_pair_tuple = (A_verb, C_verb, A_verb, C_verb)
-    return agent_pair_tuple, place_pair_tuple, verb_pair_tuple
-
-
-def A_is_different_than_C_in_the_other_keys_by_existing_pairs(ab_data, cd_data, pairs_for_key_dict_agent_place_verb):
-    global counter_last_cond
-    counter_last_cond['in'] += 1
-    try:
-        agent_pair_tuple, place_pair_tuple, verb_pair_tuple = get_agent_place_verb_tuple(ab_data, cd_data)
-    except:
-        return False
-    if ab_data['different_key'] == 'verb':
-        if not agent_pair_tuple in pairs_for_key_dict_agent_place_verb['agent']:
-            return False
-        # if not place_pair_tuple in pairs_for_key_dict_agent_place_verb['place']:
-        #     return False
-    elif ab_data['different_key'] == 'place':
-        if not agent_pair_tuple in pairs_for_key_dict_agent_place_verb['agent']:
-            return False
-        if not verb_pair_tuple in pairs_for_key_dict_agent_place_verb['verb']:
-            return False
-    elif ab_data['different_key'] == 'agent':
-        # if not place_pair_tuple in pairs_for_key_dict_agent_place_verb['place']:
-        #     return False
-        if not verb_pair_tuple in pairs_for_key_dict_agent_place_verb['verb']:
-            return False
-    counter_last_cond['success'] += 1
-    return True
-
-def get_verbs_similarity_for_row(ab_data, cd_data):
-    A_verb, B_verb = ab_data['A_verb'], ab_data['B_verb']
-    C_verb, D_verb = cd_data['A_verb'], cd_data['B_verb']
-    if A_verb == C_verb:
-        max_sim_metrics = {'similiarity_wup': 1.0}
-    else:
-        max_sim_metrics = get_verbs_similarity(A_verb, C_verb)
-    return max_sim_metrics['similiarity_wup']
-
-def A_is_different_than_C_in_the_other_keys_by_equality(ab_data, cd_data):
-    global counter_last_cond
-    counter_last_cond['in'] += 1
-    try:
-        agent_pair_tuple, place_pair_tuple, verb_pair_tuple = get_agent_place_verb_tuple(ab_data, cd_data)
-    except:
-        return False
-    if ab_data['different_key'] == 'verb':
-        if not agent_pair_tuple or len(set(agent_pair_tuple)) == 2:
-            return False
-        if not place_pair_tuple or len(set(place_pair_tuple)) == 2:
-            return False
-    elif ab_data['different_key'] == 'place':
-        if not agent_pair_tuple or len(set(agent_pair_tuple)) == 2:
-            return False
-        if not verb_pair_tuple or len(set(verb_pair_tuple)) == 1:
-            return False
-    elif ab_data['different_key'] == 'agent':
-        if not place_pair_tuple or len(set(place_pair_tuple)) == 2:
-            return False
-        if not verb_pair_tuple or len(set(verb_pair_tuple)) == 1:
-            return False
-    else:
-        if not agent_pair_tuple or len(set(agent_pair_tuple)) == 2:
-            return False
-    counter_last_cond['success'] += 1
-    return True
-
-def get_verbs_similarity(A_verb, C_verb):
-    A_verb_synsets = [x for x in wn.synsets(A_verb) if x.pos() == 'v']
-    C_verb_synsets = [x for x in wn.synsets(C_verb) if x.pos() == 'v']
-    sims_metrics = defaultdict(list)
-    for A_syn in A_verb_synsets:
-        for C_syn in C_verb_synsets:
-            similiarity_wup = round(A_syn.wup_similarity(C_syn), 3)
-            shortest_path = A_syn.shortest_path_distance(C_syn)
-            sims_metrics['similiarity_wup'].append(similiarity_wup)
-            if shortest_path:
-                sims_metrics['shortest_path'].append(shortest_path)
-    max_sim_metrics = {k: max(v) if k != 'shortest_path' else min(v) for k, v in sims_metrics.items()}
-    if 'similiarity_wup' not in max_sim_metrics:
-        return {'similiarity_wup': 1.0}
-    return max_sim_metrics
 
 
 if __name__ == '__main__':

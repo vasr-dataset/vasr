@@ -14,9 +14,6 @@ import pandas as pd
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
-from nltk.corpus import wordnet as wn
-
-from dataset.utils.PairFilter import PairsFilter
 from dataset.config import SPLIT, AB_matches_filtered_path, imsitu_path, plots_path, \
     AB_matches_filtered_visual, AB_matches_vision_and_language_feats_path, \
     AB_matches_objects_no_bbox_feats_path, \
@@ -283,22 +280,6 @@ def get_clip_img(device, preprocess, file_path, bbox=None):
     else:
         img_data = {'tensor': preprocess(img).unsqueeze(0).to(device)}
     return img_data
-
-
-def list2str(lst):
-    if len(lst) < 5:
-        return lst
-    elif 5 <= len(lst) <= 8:
-        m_idx = int(len(lst) / 2)
-        first_half = lst[:m_idx]
-        second_half = lst[m_idx:]
-        return f"{first_half}..\n..{second_half}"
-    else:
-        third_idx = int(len(lst) / 3)
-        first_third = lst[:third_idx]
-        second_third = lst[third_idx:third_idx*2]
-        third_third = lst[third_idx*2:]
-        return f"{first_third}..\n..{second_third}..\n..{third_third}"
 
 
 '''

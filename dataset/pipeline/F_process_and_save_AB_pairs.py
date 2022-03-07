@@ -13,15 +13,9 @@ def main():
     instances_to_changes_dict = {}
 
     gbo = all_AB_matches_df.groupby(['different_key', 'diff_item_A', 'diff_item_B'])
-    # c = Counter([tuple(x) for x in all_AB_matches_df[['different_key', 'diff_item_A', 'diff_item_B']].values])
 
     for name, group_df in tqdm(gbo, total=len(gbo), desc='Iterating groups...'):
 
-        # group_df_col_subset = group_df[['different_key', 'diff_item_A', 'diff_item_B', 'keys', 'A_img', 'B_img', 'A_verb', 'B_verb', 'diff_item_A_str_first', 'diff_item_B_str_first', 'A_data', 'B_data']]
-        # len_before = len(group_df_col_subset)
-        # group_df_col_subset.drop_duplicates(subset=['different_key', 'diff_item_A', 'diff_item_B', 'A_img', 'B_img', 'A_verb', 'B_verb', 'diff_item_A_str_first', 'diff_item_B_str_first'], inplace=True)
-        # if len(group_df_col_subset) < len_before:
-        #     print(f"After dropping duplicates: {len(group_df_col_subset)}, from: {len_before}")
         group_list = group_df.to_dict('records')
         instances_to_changes_dict[name] = group_list
 

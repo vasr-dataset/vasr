@@ -21,7 +21,6 @@ def main(split_file_name):
     for r_idx, r in tqdm(all_ABCD_matches_df.iterrows(), desc='Iteration analogies...', total=len(all_ABCD_matches_df)):
         random_candidates = get_random_images(r, split_images)
         all_random_candidates.append(random_candidates)
-    # all_ABCD_matches_df['candidates'] = all_ABCD_matches_df.apply(lambda r: get_random_images(r, split_images), axis=1)
     all_ABCD_matches_df['random_candidates'] = all_random_candidates
     print(all_ABCD_matches_df['different_key'].value_counts())
     split_file_name_out = split_file_name.replace('all_ABCD_matches_rule_based_sampled', 'analogies').replace(".csv", '_random_candidates.csv')
@@ -41,6 +40,7 @@ def main(split_file_name):
     print(f"Dumped {len(all_ABCD_matches_df)} analogies of SPLIT {SPLIT} to {out_path}")
     return all_ABCD_matches_df
 
+
 def get_random_images(r, split_images):
     r_images = {r['A_img'], r['B_img'], r['C_img'], r['D_img']}
     ab_verb = r['A_verb']
@@ -50,10 +50,9 @@ def get_random_images(r, split_images):
     sampled_random_images = random.sample(relevant_images, NUM_CANDIDATES-1)
     return json.dumps(sampled_random_images)
 
+
 if __name__ == '__main__':
     for split_idx, split_file_name in enumerate(split_to_files[SPLIT]):
-        # if split_file_name != 'all_ABCD_matches_rule_based_sampled_train_full_at_size_of_ood.csv':
-        #     continue
         print(f"Packing {split_file_name}")
         all_ABCD_matches_df = main(split_file_name)
 

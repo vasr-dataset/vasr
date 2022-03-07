@@ -55,9 +55,6 @@ class CLIPDistractorsFilter:
     def get_max_probs(self, AB_classes, A_indices, B_indices, X_tensor):
         X_img_logits_per_AB_class, _ = self.model(X_tensor, AB_classes)
         X_logits_per_class = X_img_logits_per_AB_class.cpu().detach().numpy()[0]
-        # X_img_A_frames_logits_mean = X_logits_per_class[A_indices].mean()
-        # X_img_B_frames_logits_mean = X_logits_per_class[B_indices].mean()
-        # X_img_AB_probs = [float(x) for x in softmax([X_img_A_frames_logits_mean, X_img_B_frames_logits_mean])]
         X_img_A_frames_logits_max = X_logits_per_class[A_indices].max()
         X_img_B_frames_logits_max = X_logits_per_class[B_indices].max()
         X_img_AB_probs = [float(x) for x in softmax([X_img_A_frames_logits_max, X_img_B_frames_logits_max])]
@@ -101,7 +98,6 @@ class CLIPDistractorsFilter:
 
 def main(args, split_file_name):
     df, in_path = read_df(split_file_name, args)
-    # df = df.query("A_img == 'bowing_72.jpg' and diff_item_A_str_first == 'bowing' and diff_item_B_str_first == 'laughing'")
 
     clip_feature_extractor = CLIPDistractorsFilter()
 
