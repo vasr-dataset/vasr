@@ -1,10 +1,7 @@
 import json
 import numpy as np
 import os
-import pickle
 from collections import defaultdict
-from copy import deepcopy
-import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
 
@@ -73,8 +70,6 @@ def calculate_train_atoms_occurences(train_df):
 def calc_jaccard_and_atoms_occs(testdev_df, atoms_counter, atoms_counter_as_diff_key):
     all_analogy_difficulty_scores = []
     for idx, (r_idx, r) in tqdm(enumerate(testdev_df.iterrows()), total=len(testdev_df), desc='calc_jaccard_and_atoms_occs'):
-        # if idx < 48780:
-        #     continue
         keys_jaccard, values_jaccard = calculate_AC_jaccard_distance(r)
 
         mean_diff_key_occs, max_diff_key_occs = calculate_test_sample_train_occ(atoms_counter, atoms_counter_as_diff_key, r)
@@ -158,7 +153,6 @@ def create_silver_and_gold_splits(testdev_df, train_df_silver):
     test_df = build_test(testdev_sorted_df)
 
     NOISE_LEVEL = 0.4
-    dev_df_ood_all_desired_size = 3000
     desired_dev_gold_size_after_annotation = 100
     train_df_ood_gold_desired_size = 1000
 
@@ -188,29 +182,6 @@ def create_silver_and_gold_splits(testdev_df, train_df_silver):
     gold = pd.DataFrame(pd.concat([train_gold_vc, dev_gold_vc, test_gold_vc],axis=1))
 
     print(f"Done creating test")
-
-    """
-    
-        # print(f"Plotting first 100")
-    # for idx, (r_idx, r) in enumerate(test_df.sample(100).iterrows()):
-    #     out_p = os.path.join(test_plots_path, f'{idx}_aa.png')
-    #     visualize_analogy(r, out_p=out_p, plot_annotations=False, return_fig=False, hide_answer=True)
-    #     out_p = os.path.join(test_plots_path, f'{idx}_full.png')
-    #     visualize_analogy(r, out_p=out_p, plot_annotations=True, return_fig=False, hide_answer=False)
-
-    testdev_feats_df_low_jaccard_sim = testdev_feats_df.sort_values(['keys_jaccard', 'values_jaccard'], ascending=[True, True])
-    testdev_feats_df_low_train_atoms_occ = testdev_feats_df.sort_values(['mean_diff_key_occs', 'max_diff_key_occs'], ascending=[True, True])
-    testdev_feats_df_best_srl = testdev_feats_df.sort_values(['score_srl_weighted_AB', 'score_srl_weighted_CD'], ascending=[False, False])
-    # first_analogy, last_analogy, middle_analogy = get_3_analogies(testdev_feats_df_low_jaccard_sim)
-    # first_analogy, last_analogy, middle_analogy = get_3_analogies(testdev_feats_df_low_train_atoms_occ)
-    # first_analogy, last_analogy, middle_analogy = get_3_analogies(testdev_feats_df_best_srl)
-    # show_analogy(first_analogy)
-    # show_analogy(middle_analogy)
-    # show_analogy(last_analogy)
-    # show_analogy(first_analogy, plot_annotations=True)
-    # show_analogy(middle_analogy, plot_annotations=True)
-    # show_analogy(last_analogy, plot_annotations=True)
-    """
 
 
 def build_train(NOISE_LEVEL, dev_df_silver, test_df_percentages, train_df_ood_gold_desired_size, train_df_silver):
@@ -282,19 +253,6 @@ def build_test(testdev_sorted_df):
         current_test_AB_images.append((r['A_img'], r['B_img']))
     test_df = pd.DataFrame(current_test_items)
     return test_df
-
-
-def get_3_analogies(df_to_plot):
-    first_analogy = df_to_plot.iloc[0]
-    middle_analogy = df_to_plot.iloc[int(len(df_to_plot) / 2)]
-    last_analogy = df_to_plot.iloc[-1]
-    return first_analogy, last_analogy, middle_analogy
-
-
-def show_analogy(first_analogy, plot_annotations=False):
-    analogy = first_analogy
-    fig_analogies = visualize_analogy(analogy, plot_annotations=plot_annotations, return_fig=True, hide_answer=False)
-    fig_analogies.show()
 
 
 if __name__ == '__main__':

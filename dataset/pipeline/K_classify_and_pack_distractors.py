@@ -73,7 +73,6 @@ def main(split_file_name):
             df = df.sample(len(ood_df))
 
     df.to_csv(out_path, index=False)
-    # all_ABCD_matches_df.to_csv(ABCD_analogies_with_distractors_path, index=False)
 
     print(f'total_items_received: {total_items_received}, total_items_after_filtering: {total_items_after_filtering}, distractors after filter: {round(total_items_after_filtering / total_items_received * 100, 2)}%')
 
@@ -97,7 +96,6 @@ def get_top_images_after_clip_filter(curr_dist_lst):
     total_items_received += items_received
     total_items_after_filtering += items_after_filtering
 
-    # Ron - add your filter here
     curr_dist_lst_not_ambiguous_top_2 = curr_dist_lst_not_ambiguous[:2]
     return curr_dist_lst_not_ambiguous_top_2, bad_images
 
@@ -112,9 +110,6 @@ def maximal_wrong_prob(prob_A_class_AB, prob_B_class_AB):
 
 def opposite_prob(prob_A_class_AB, prob_B_class_AB):
     return prob_B_class_AB[0] >= 0.66 or prob_A_class_AB[1] >= 0.66
-
-def opposite_prob_strict(prob_A_class_AB, prob_B_class_AB):
-    return prob_B_class_AB[0] >= 0.15 or prob_A_class_AB[1] >= 0.15
 
 
 def get_analogies_name(split_file_name):
