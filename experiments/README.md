@@ -1,6 +1,6 @@
 # Usage
 ## Config
-First set the following paths in the experiments/config.py:
+First, set the following paths in the experiments/config.py:
 ```python
 # Path to the Directory containing images
 IMAGES_PATH = 'path/to/dir'
