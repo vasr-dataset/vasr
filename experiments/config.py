@@ -11,7 +11,7 @@ FEW_SHOT_DATA_SAMPLES = [4, 8, 16, 32, 64, 128, 256, 512, 1024]
 MODELS_MAP = {
     # https://arxiv.org/abs/2010.11929
     # ViT-Large model (ViT-L/32), ImageNet-1k weights fine-tuned from in21k @ 384x384
-    'vit': 'vit_small_patch32_384',
+    'vit': 'vit_large_patch32_384',
 
     # https://arxiv.org/abs/2103.14030
     # Swin-L @ 384x384, pretrzained ImageNet-22k, fine tune 1k
@@ -28,14 +28,17 @@ MODELS_MAP = {
 
 # ------------------------------Paths--------------------------------
 
+IMSITU_PATH = '/Users/eliyahustrugo/PycharmProjects/image_analogies/imsitu_data'
 IMAGES_PATH = '/Users/eliyahustrugo/PycharmProjects/image_analogies/imsitu_data/images_512'
-SPLIT_PATH = '/Users/eliyahustrugo/PycharmProjects/vasr/experiments/date_split'
+SWIG_PREDICTIONS = '/Users/eliyahustrugo/PycharmProjects/image_analogies/imsitu_data/analogies_outputs/data/GSR_pred_parsed_results.json'
 
+SOURCE = '/Users/eliyahustrugo/PycharmProjects/vasr/experiments'
+SPLIT_PATH = os.path.join(SOURCE, 'date_split')
 GOLD_PATH_DIR = os.path.join(SPLIT_PATH, 'gold_standard')
 TEST_RANDOM_PATH = os.path.join(SPLIT_PATH, 'split_random', 'test_random.csv')
 TEST_GOLD_PATH = os.path.join(SPLIT_PATH, 'gold_standard', 'test_gold.csv')
 
 # ------------------------------Paths to Results--------------------------------
 
-ZEROSHOT_RESULTS_PATH = 'experiments/model_results/zero_shot'
-TRAIN_RESULTS_PATH = 'experiments/model_results/train'
+ZEROSHOT_RESULTS_PATH = os.path.join(IMSITU_PATH, 'analogies_outputs/model_results/zero_shot')
+TRAIN_RESULTS_PATH = os.path.join(IMSITU_PATH, 'analogies_outputs/model_results/train')
