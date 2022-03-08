@@ -1,13 +1,13 @@
-#Usage
-##Config
-First set the following paths in the experiments/config.py:
+# Usage
+## Config
+First, set the following paths in the experiments/config.py:
 ```python
 # Path to the Directory containing images
 IMAGES_PATH = 'path/to/dir'
 #Path to the Directory containing the split files
 SPLIT_PATH = 'path/to/dir'
 ```
-##Zero-Shot
+## Zero-Shot
 To evaluate arithmetic zero-shot on the random distractors run:
 ```
 python run_zero_shot.py --model vit --split random  
@@ -38,12 +38,12 @@ It's possible to run  the above examples with the following models:
 }
 
 ```
-For exmaple, to use Swin Transmofer on the random distractors run:
+For exmaple, to use Swin Transformer on the random distractors run:
 ```
 python run_zero_shot.py --model swin --split random  
 
 ```
 
-##Trainable
+## Trainable
 
 
