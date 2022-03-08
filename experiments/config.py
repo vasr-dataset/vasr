@@ -11,7 +11,7 @@ FEW_SHOT_DATA_SAMPLES = [4, 8, 16, 32, 64, 128, 256, 512, 1024]
 MODELS_MAP = {
     # https://arxiv.org/abs/2010.11929
     # ViT-Large model (ViT-L/32), ImageNet-1k weights fine-tuned from in21k @ 384x384
-    'vit': 'vit_large_patch32_384',
+    'vit': 'vit_small_patch32_384',
 
     # https://arxiv.org/abs/2103.14030
     # Swin-L @ 384x384, pretrzained ImageNet-22k, fine tune 1k
@@ -37,5 +37,5 @@ TEST_GOLD_PATH = os.path.join(SPLIT_PATH, 'gold_standard', 'test_gold.csv')
 
 # ------------------------------Paths to Results--------------------------------
 
-ZEROSHOT_RESULTS_PATH = '/model_results/zero_shot'
-TRAIN_RESULTS_PATH = '/model_results/train'
+ZEROSHOT_RESULTS_PATH = 'experiments/model_results/zero_shot'
+TRAIN_RESULTS_PATH = 'experiments/model_results/train'

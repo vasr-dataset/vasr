@@ -279,7 +279,6 @@ def test_epoch(loss_fn, model, dev_loader, epoch):
 
     for batch_idx, batch_data in tqdm(enumerate(dev_loader), total=len(dev_loader), desc=f'Testing epoch {epoch}...'):
 
-        y = label.squeeze()
         with torch.no_grad():
 
             input_img, options, label = batch_data
@@ -288,6 +287,7 @@ def test_epoch(loss_fn, model, dev_loader, epoch):
         if args.debug:
             if batch_idx > 5:
                 break
+        y = label.squeeze()
         loss = loss_fn(out, y)
         accuracy, predictions, labels = calculate_accuracy(out, y)
         epoch_dev_losses.append(loss.item())
@@ -300,6 +300,9 @@ def test_epoch(loss_fn, model, dev_loader, epoch):
 
 def main():
     data = get_split(args)
+    data[TRAIN] =data[TRAIN][:2]
+    data[DEV] =data[DEV][:2]
+
     backend_model = BackendModel(args)
     baseline_model = BaselineModel(backend_model, args)
     baseline_model = baseline_model.to(device)
