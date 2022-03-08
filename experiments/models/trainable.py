@@ -13,7 +13,8 @@ class BaselineModel(nn.Module):
 
         if args.model_description == 'arithmetics':
             linear_layer_images = 2
-
+        elif args.model_description == 'arithmetics_dist':
+            linear_layer_images = 2
         else:
             linear_layer_images = 4
         pair_embed_dim = linear_layer_images * embed_dim
