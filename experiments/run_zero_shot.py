@@ -32,7 +32,7 @@ def get_args():
     parser.add_argument('--result_suffix', default="", required=False,
                         help='suffix to add to results name')
 
-    parser.add_argument('--split', default='distractors',
+    parser.add_argument('--split', default='random',
                         help='Path to save the results as csv')
 
     parser.add_argument('--analogies_model', action='store_true', default=False,

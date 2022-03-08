@@ -34,7 +34,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-lr', '--lr', help='learning rate', default=0.001, type=float)
+    parser.add_argument('-lr', '--lr', help='learning rate', default=0.00025, type=float)
     parser.add_argument('-bz', '--batch_size', default=128, type=int)
     parser.add_argument('--model_description', default="similar_to_b", help=f'options: {model_description_options}', type=str)
     parser.add_argument('-ne', '--n_epochs', default=3, type=int)
@@ -76,8 +76,8 @@ class Loader(Dataset):
 
             label = label.to(device)
             images_to_load = {'A': row.A_img, 'B': row.B_img, 'C': row.C_img}
-            # input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
-            input_imgs = list(images_to_load.values())
+            input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
+            # input_imgs = list(images_to_load.values())
 
             return input_imgs, row.option, label
         else:
@@ -90,34 +90,15 @@ class Loader(Dataset):
             label = label.to(device)
             images_to_load = {'A': row.A_img, 'B': row.B_img, 'C': row.C_img}
 
-            # input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
-            # candidate_imgs = [self.backend_model.load_and_process_img(x) for x in candidates]
-            input_imgs = list(images_to_load.values())
-            candidate_imgs = list(candidates)
+            input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
+            candidate_imgs = [self.backend_model.load_and_process_img(x) for x in candidates]
+            # input_imgs = list(images_to_load.values())
+            # candidate_imgs = list(candidates)
 
             return input_imgs, candidate_imgs, label
 
     def __len__(self):
         return len(self.data)
-
-    # def __getitem__(self, index):
-    #     row = self.data.iloc[index]
-    #
-    #     candidates = eval(row.candidates) + [row.D_img]
-    #     random.shuffle(candidates)
-    #     candidates = np.array(candidates)
-    #     label = torch.from_numpy(np.where(candidates == row.D_img)[0])
-    #     label = label.to(device)
-    #     images_to_load = {'A': row.A_img, 'B': row.B_img, 'C': row.C_img}
-    #
-    #     # input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
-    #     # candidate_imgs = [self.backend_model.load_and_process_img(x) for x in candidates]
-    #     input_imgs = list(images_to_load.values())
-    #     candidate_imgs = list(candidates)
-    #
-    #     return input_imgs, candidate_imgs, label
-
-
 
 
 # ------------------------------Code--------------------------------
@@ -350,10 +331,7 @@ def create_new_df(df, sufix):
 
 def main():
     data = get_split(args)
-    # data[TRAIN] = create_new_df(data[TRAIN],TRAIN)
-    # data[DEV] = create_new_df(data[DEV],DEV)
-    data[TRAIN] = pd.read_csv('/Users/eliyahustrugo/PycharmProjects/vasr/experiments/new_dis_train.csv')
-    # data[DEV] = pd.read_csv('/Users/eliyahustrugo/PycharmProjects/vasr/experiments/new_dis_dev.csv')
+    data[TRAIN] = create_new_df(data[TRAIN], TRAIN)
 
     backend_model = BackendModel(args)
     baseline_model = BaselineModel(backend_model, args)
@@ -361,12 +339,9 @@ def main():
     print(f"Checking baseline model cuda: {next(baseline_model.parameters()).is_cuda}")
     if args.multi_gpu:
         baseline_model = nn.DataParallel(baseline_model)
-    # loss_fn = torch.nn.CrossEntropyLoss()
-    # pos_weights = np.array([4, 1])
-    # weights = torch.as_tensor(pos_weights, dtype=torch.float)
-    weights = [4.0]
-    class_weights = torch.FloatTensor(weights).to(device)
-    loss_fn = torch.nn.BCEWithLogitsLoss()
+
+    class_weights = torch.FloatTensor([4.0]).to(device)
+    loss_fn = torch.nn.BCEWithLogitsLoss(weight=class_weights)
 
     if args.test_model:
         test(backend_model, baseline_model, data, loss_fn)
