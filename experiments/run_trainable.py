@@ -300,9 +300,6 @@ def test_epoch(loss_fn, model, dev_loader, epoch):
 
 def main():
     data = get_split(args)
-    data[TRAIN] =data[TRAIN][:2]
-    data[DEV] =data[DEV][:2]
-
     backend_model = BackendModel(args)
     baseline_model = BaselineModel(backend_model, args)
     baseline_model = baseline_model.to(device)
