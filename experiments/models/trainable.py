@@ -33,10 +33,10 @@ class BaselineModel(nn.Module):
         return x
 
     def extract_input_features(self, input_images, candidates):
-        initial_candidates_features = [self.backend_model.forward_core_model(candidate) for candidate in candidates]
         inp_embeddings = {k: self.backend_model.forward_core_model(inp_img) for k, inp_img in input_images.items()}
+        initial_candidates_features = self.backend_model.forward_core_model(candidates)
 
-        # initial_candidates_features = self.backend_model.forward_core_model(candidates)
+        # initial_candidates_features = [self.backend_model.forward_core_model(candidate) for candidate in candidates]
         # inp_embeddings = {k: self.backend_model.forward_core_model(inp_img) for k, inp_img in zip(['A', 'B', 'C'], input_images)}
 
         if self.model_description == 'concatenation':
