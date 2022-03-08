@@ -59,7 +59,6 @@ class BaselineModel(nn.Module):
 
     def extract_input_features(self, input_images, candidates):
         initial_candidates_features = [self.backend_model.forward_core_model(candidate) for candidate in candidates]
-
         inp_embeddings = {k: self.backend_model.forward_core_model(inp_img) for k, inp_img in input_images.items()}
 
         if self.model_description == 'concatenation':
@@ -72,13 +71,13 @@ class BaselineModel(nn.Module):
             final_candidates_features = initial_candidates_features
 
         elif self.model_description == 'arithmetics':
-            final_candidates_features, input_images_features = self.get_analogies_feats(inp_embeddings, initial_candidates_features)
+            input_images_features = inp_embeddings['C'] + (inp_embeddings['B'] - inp_embeddings['A'])
+            final_candidates_features = initial_candidates_features
+
+        elif self.model_description == 'arithmetics_dist':
+            input_images_features = inp_embeddings['B'] - inp_embeddings['A']
+            final_candidates_features = [option_feat - inp_embeddings['C'] for option_feat in initial_candidates_features]
 
         else:
             raise Exception(f"Not implemented get_input_images_embedding")
         return input_images_features, final_candidates_features
-
-    def get_analogies_feats(self, all_inp_feats, initial_candidates_features):
-        C_plus_B_minus_A = all_inp_feats['C'] + all_inp_feats['B'] - all_inp_feats['A']
-        input_images_features = C_plus_B_minus_A
-        return initial_candidates_features, input_images_features
