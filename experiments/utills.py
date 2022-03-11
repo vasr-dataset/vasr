@@ -7,10 +7,6 @@ import pandas as pd
 import pickle
 from config import TRAIN, TEST, DEV, SPLIT_PATH, GOLD_PATH_DIR
 
-# ------------------------------Constants--------------------------------
-
-SMALL_TEST_SIZE = 300
-
 
 # ------------------------------Code--------------------------------
 
@@ -87,7 +83,7 @@ def dump_train_info(args, model_dir_path, all_losses, all_dev_accuracy, epoch):
 def get_split(args):
     split = {}
 
-    if args.few_shot_experiments and split == 'distractors':
+    if args.few_shot_experiments and split == 'difficult':
         dir_path = GOLD_PATH_DIR
     else:
         dir_path = os.path.join(SPLIT_PATH, f'split_{args.split}')
@@ -108,9 +104,6 @@ def get_split(args):
 
             if TRAIN in file:
                 train_df = pd.read_csv(file_path)
-                if args.few_shot_experiments:
-                    print(f"*** few_shot_experiments, sampling train from {len(train_df)} to {args.few_shot_items}")
-                    train_df = train_df.sample(args.few_shot_items)
                 split[TRAIN] = train_df
                 setattr(args, TRAIN, file_path)
 

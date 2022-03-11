@@ -5,8 +5,20 @@ import os
 TEST = 'test'
 DEV = 'dev'
 TRAIN = 'train'
+
+SUPERVISED_CONCAT = 'supervised_concat'
+SUPERVISED_ARITHMETIC = 'supervised_arithmetic'
+
+model_description_options = {
+
+    # (A,B,C) --> D
+    SUPERVISED_CONCAT,
+    # (C+(B-A)) --> D
+    SUPERVISED_ARITHMETIC
+}
+
+
 # ------------------------------Constants--------------------------------
-FEW_SHOT_DATA_SAMPLES = [4, 8, 16, 32, 64, 128, 256, 512, 1024]
 
 MODELS_MAP = {
     # https://arxiv.org/abs/2010.11929

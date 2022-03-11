@@ -9,19 +9,12 @@ from utills import get_split
 import argparse
 import os
 from utills import save_model, dump_test_info, dump_train_info, calculate_accuracy
-from config import TRAIN, DEV, TRAIN_RESULTS_PATH, TEST, FEW_SHOT_DATA_SAMPLES, MODELS_MAP
 from models.backend import BackendModel
 from models.trainable import BaselineModel
+from config import TRAIN, DEV, TRAIN_RESULTS_PATH, TEST, MODELS_MAP, model_description_options
 
 # ------------------------------Constants--------------------------------
 
-model_description_options = {
-
-    # (A,B,C) --> D
-    'concatenation',
-    # (C+(B-A)) --> D
-    'arithmetics'
-}
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -33,7 +26,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-lr', '--lr', help='learning rate', default=0.001, type=float)
     parser.add_argument('-bz', '--batch_size', default=128, type=int)
-    parser.add_argument('--model_description', default="arithmetics", help=f'options: {model_description_options}', type=str)
+    parser.add_argument('--model_description', help=f'options: {model_description_options}', type=str, required=True)
     parser.add_argument('--n_epochs', default=3, type=int)
     parser.add_argument('--split', default='random', help='Path to save the results as csv')
     parser.add_argument('--model_backend_type', default='vit', help="vit", required=False)
@@ -293,13 +286,4 @@ if __name__ == '__main__':
     print(f"args")
     print(args)
     setattr(args, 'backend_version', MODELS_MAP[args.model_backend_type])
-
-    if args.few_shot_experiments:
-        test_all = args.test_model
-        for few_shot_items in FEW_SHOT_DATA_SAMPLES:
-            setattr(args, 'few_shot_items', few_shot_items)
-            if not test_all:
-                args.test_model = False
-            main()
-    else:
-        main()
+    main()

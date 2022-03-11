@@ -8,7 +8,6 @@ from experiments.config import IMAGES_PATH
 
 # ------------------------------Constants------------------------------
 
-CLIP = 'clip'
 INPUT_NAMES = ['A', 'B', 'C']
 timm_models = ['vit', 'swin', 'deit', 'convnext']
 

@@ -1,7 +1,8 @@
 import torch
 from torch import nn
+from config import SUPERVISED_ARITHMETIC,SUPERVISED_CONCAT
 
-device_ids = [0, 1, 2, 3]
+
 NUM_CANDIDATE = 4
 
 
@@ -11,7 +12,7 @@ class BaselineModel(nn.Module):
         self.backend_model = backend_model
         embed_dim = backend_model.get_embed_dim()
 
-        if args.model_description == 'arithmetics':
+        if args.model_description == SUPERVISED_ARITHMETIC:
             linear_layer_images = 2
         elif args.model_description == 'arithmetics_dist':
             linear_layer_images = 2
@@ -61,7 +62,7 @@ class BaselineModel(nn.Module):
         initial_candidates_features = [self.backend_model.forward_core_model(candidate) for candidate in candidates]
         inp_embeddings = {k: self.backend_model.forward_core_model(inp_img) for k, inp_img in input_images.items()}
 
-        if self.model_description == 'concatenation':
+        if self.model_description == SUPERVISED_CONCAT:
             """ 
             the candidates contain 512 image vector for each option
             inp_embeddings includes 512 image vector for each ['A','B','C']
@@ -70,7 +71,8 @@ class BaselineModel(nn.Module):
             input_images_features = torch.cat([inp_embeddings[k] for k in ['A', 'B', 'C']], dim=1)
             final_candidates_features = initial_candidates_features
 
-        elif self.model_description == 'arithmetics':
+        elif self.model_description == SUPERVISED_ARITHMETIC:
+
             input_images_features = inp_embeddings['C'] + (inp_embeddings['B'] - inp_embeddings['A'])
             final_candidates_features = initial_candidates_features
 
