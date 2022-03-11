@@ -120,10 +120,6 @@ def get_split(args):
 
             elif TEST in file:
                 test_df = pd.read_csv(file_path)
-                if args.small_test:
-                    print(f"*** Small test ***, taking head 300")
-                    test_df = test_df.head(SMALL_TEST_SIZE)
-
                 split[TEST] = test_df
                 setattr(args, TEST, file_path)
 

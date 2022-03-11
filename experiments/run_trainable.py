@@ -3,7 +3,6 @@ import random
 import json
 import numpy as np
 import torch
-from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 from utills import get_split
@@ -16,7 +15,6 @@ from models.trainable import BaselineModel
 
 # ------------------------------Constants--------------------------------
 
-device_ids = [0, 1, 2, 3]
 model_description_options = {
 
     # (A,B,C) --> D
@@ -35,28 +33,17 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-lr', '--lr', help='learning rate', default=0.001, type=float)
     parser.add_argument('-bz', '--batch_size', default=128, type=int)
-    parser.add_argument('--model_description', default="similar_to_b", help=f'options: {model_description_options}', type=str)
-    parser.add_argument('-ne', '--n_epochs', default=3, type=int)
-    parser.add_argument('-s', '--split', default='random', help='Path to save the results as csv')
-    parser.add_argument('-rs', '--result_suffix', default="", required=False, help='suffix to add to results name')
-
+    parser.add_argument('--model_description', default="arithmetics", help=f'options: {model_description_options}', type=str)
+    parser.add_argument('--n_epochs', default=3, type=int)
+    parser.add_argument('--split', default='random', help='Path to save the results as csv')
     parser.add_argument('--model_backend_type', default='vit', help="vit", required=False)
-
-    parser.add_argument("--debug", action='store_const', default=False, const=True)
-    parser.add_argument("--multi_gpu", action='store_const', default=False, const=True)
     parser.add_argument("--test_model", action='store_const', default=False, const=True)
-    parser.add_argument('--load_epoch', default=2)
+    parser.add_argument('--load_epoch', default='BEST')
     parser.add_argument("--few_shot_experiments", action='store_const', help='few-shot experiments', default=False, const=True)
-    parser.add_argument("--train_on_silver", action='store_const', default=False, const=True)
     parser.add_argument("--cheap_model", action='store_const', default=False, const=True)
-    parser.add_argument("--small_test", action='store_const', default=False, const=True)
+
     args = parser.parse_args()
 
-    if args.multi_gpu:
-        print(f"Multiplying batch_size by # GPUs: {len(device_ids)}")
-        initial_batch_size = args.batch_size
-        args.batch_size *= len(device_ids)
-        print(f"initial_batch_size: {initial_batch_size}, new batch_size: {args.batch_size}")
     return args
 
 
@@ -98,11 +85,6 @@ def get_experiment_dir(args):
     if args.few_shot_experiments:
         model_dir_path += f"_few_shot_{args.few_shot_items}_items"
 
-    if args.train_on_silver:
-        model_dir_path += f"_train_on_silver"
-
-    if args.debug:
-        model_dir_path += "_DEBUG"
     if not os.path.exists(model_dir_path):
         os.mkdir(model_dir_path)
     json.dump(args.__dict__, open(os.path.join(model_dir_path, 'args.json'), 'w'))
@@ -233,14 +215,10 @@ def train_epoch(loss_fn, model, optimizer, train_loader, epoch):
         epochs.set_description(f'Training epoch {epoch}, model {model.model_description}, split: {args.split}')
 
         for batch_idx, batch_data in epochs:
-
             # Forward pass
             input_img, options, label = batch_data
             out = model(input_img, options).squeeze()
 
-            if args.debug:
-                if batch_idx > 5:
-                    break
             y = label.squeeze()
             optimizer.zero_grad()
 
@@ -278,15 +256,10 @@ def test_epoch(loss_fn, model, dev_loader, epoch):
     all_labels = []
 
     for batch_idx, batch_data in tqdm(enumerate(dev_loader), total=len(dev_loader), desc=f'Testing epoch {epoch}...'):
-
         with torch.no_grad():
-
             input_img, options, label = batch_data
             out = model(input_img, options).squeeze()
 
-        if args.debug:
-            if batch_idx > 5:
-                break
         y = label.squeeze()
         loss = loss_fn(out, y)
         accuracy, predictions, labels = calculate_accuracy(out, y)
@@ -304,8 +277,7 @@ def main():
     baseline_model = BaselineModel(backend_model, args)
     baseline_model = baseline_model.to(device)
     print(f"Checking baseline model cuda: {next(baseline_model.parameters()).is_cuda}")
-    if args.multi_gpu:
-        baseline_model = nn.DataParallel(baseline_model)
+
     loss_fn = torch.nn.CrossEntropyLoss()
 
     if args.test_model:
@@ -322,10 +294,7 @@ if __name__ == '__main__':
     print(args)
     setattr(args, 'backend_version', MODELS_MAP[args.model_backend_type])
 
-    if args.debug:
-        print(f"*** DEBUG MODE ***")
-
-    elif args.few_shot_experiments:
+    if args.few_shot_experiments:
         test_all = args.test_model
         for few_shot_items in FEW_SHOT_DATA_SAMPLES:
             setattr(args, 'few_shot_items', few_shot_items)

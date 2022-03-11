@@ -18,20 +18,18 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # ------------------------------Models------------------------------
 class ZeroShot:
 
-    def __init__(self, model, model_type, compare_to, core_model_preprocess_func):
+    def __init__(self, model, model_type, core_model_preprocess_func):
         """
         Parameters
         ----------
         model : Pretrained model for feature extraction
         model_type : (str) The name of the model {'vit', 'swin', 'deit', 'efficientnet', 'regnety'}
-        compare_to :(list) list of strings - the names of the inputs to use in cosine similarity with the candidates images
         core_model_preprocess_func : A torchvision transform that converts a PIL image into a tensor that the returned
         model can take as its input
         """
 
         self.model = model
         self.model_type = model_type
-        self.compare_to = compare_to
         if core_model_preprocess_func:
             self.core_model_preprocess_func = core_model_preprocess_func
 
@@ -49,11 +47,10 @@ class ZeroShot:
         """
         scores = defaultdict(list)
         candidates = all_image_features['candidates']
-        images_to_compare = [img for img in self.compare_to]
 
         with torch.no_grad():
             chosen_features_list = {img_name: self.forward_core_model(all_image_features[img_name])
-                                    for img_name in images_to_compare}
+                                    for img_name in INPUT_NAMES}
 
             for k, im in enumerate(candidates):
                 D_features = self.forward_core_model(im)
@@ -62,7 +59,7 @@ class ZeroShot:
                     score = self.get_img_cosine_similarity(D_features, features)
                     scores[img_name].append(float(score))
 
-        return {img_name: scores[img_name] for img_name in images_to_compare}
+        return {img_name: scores[img_name] for img_name in INPUT_NAMES}
 
     def get_analogies_scores(self, all_image_features, candidate_names):
         """
