@@ -1,12 +1,22 @@
 # Usage
-## Config
-First, set the following paths in the experiments/config.py:
-```python
-# Path to the Directory containing images
-IMAGES_PATH = 'path/to/dir'
-#Path to the Directory containing the split files
-SPLIT_PATH = 'path/to/dir'
+### Create data directory
+```commandline
+mkdir data
 ```
+### Download imSitu images from imsitu.org (resized 256x256 3.7G)
+```commandline
+wget https://s3.amazonaws.com/my89-frame-annotation/public/of500_images_resized.tar data/imsitu_images
+```
+### You can also download the original size images from http://imsitu.org/download/ (34G)
+### download VASR analogies
+```commandline
+wget XYZ data/vasr_dataset
+```
+### Create output directory
+```commandline
+mkdir data/model_results
+```
+
 ## Zero-Shot
 To evaluate arithmetic zero-shot on the random distractors run:
 ```
