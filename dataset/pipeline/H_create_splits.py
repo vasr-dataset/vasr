@@ -1,14 +1,13 @@
 import json
-import numpy as np
 import os
 from collections import defaultdict
+
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
 from G_find_CD_pairs import calculate_weighted_srl_score
-from dataset.config import ABCD_analogies_sampled_path, data_path, columns_to_serialize, test_plots_path
-from dataset.utils.visualization import visualize_analogy
-
+from utils.utils import data_path, columns_to_serialize
 
 def main():
     train_df = pd.read_csv(os.path.join(data_path, 'ABCD_matches', f'all_ABCD_matches_rule_based_sampled_train.csv'))
@@ -179,7 +178,8 @@ def create_silver_and_gold_splits(testdev_df, train_df_silver):
     train_gold_vc.name = 'Train'
     dev_gold_vc = dev_df_gold_before_annotation['different_key'].value_counts()
     dev_gold_vc.name = 'Dev'
-    gold = pd.DataFrame(pd.concat([train_gold_vc, dev_gold_vc, test_gold_vc],axis=1))
+    gold_stats = pd.DataFrame(pd.concat([train_gold_vc, dev_gold_vc, test_gold_vc],axis=1))
+    print(gold_stats)
 
     print(f"Done creating test")
 

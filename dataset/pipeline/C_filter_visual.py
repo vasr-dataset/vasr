@@ -1,15 +1,14 @@
 import json
-import numpy as np
 import os
 
+import numpy as np
 import pandas as pd
 
-from dataset.config import imsitu_path
+from config import BBOX_PCT_THRESHOLD
+from utils.utils import imsitu_path, AB_matches_filtered_textual, AB_matches_filtered_visual, SPLIT, swig_path
 
 imsitu = json.load(open(os.path.join(imsitu_path, "imsitu_space.json")))
 nouns = imsitu["nouns"]
-from dataset.config import AB_matches_filtered_textual, AB_matches_filtered_visual, swig_images_path, swig_path, \
-    SPLIT, BBOX_PCT_THRESHOLD
 
 
 def main():
@@ -22,17 +21,18 @@ def main():
 
     df_filtered_before_bbox['A_img_height'] = df_filtered_before_bbox['A_img'].apply(lambda x: data_split[x]['height'])
     df_filtered_before_bbox['A_img_width'] = df_filtered_before_bbox['A_img'].apply(lambda x: data_split[x]['width'])
+
     df_filtered_before_bbox['A_img_size'] = df_filtered_before_bbox.apply(lambda r: r['A_img_height'] * r['A_img_width'], axis=1)
     df_filtered_before_bbox['B_img_height'] = df_filtered_before_bbox['B_img'].apply(lambda x: data_split[x]['height'])
+
     df_filtered_before_bbox['B_img_width'] = df_filtered_before_bbox['B_img'].apply(lambda x: data_split[x]['width'])
     df_filtered_before_bbox['B_img_size'] = df_filtered_before_bbox.apply(lambda r: r['B_img_height'] * r['B_img_width'], axis=1)
+
     df_filtered_before_bbox['diff_item_A_str_first_bbox'] = df_filtered_before_bbox.apply(lambda r: get_bbox_of_diff_item(r['A_data']['A_bounding_box'], r['diff_item_A_str_first'], r['different_key']), axis=1)
     df_filtered_before_bbox['diff_item_B_str_first_bbox'] = df_filtered_before_bbox.apply(lambda r: get_bbox_of_diff_item(r['B_data']['B_bounding_box'], r['diff_item_B_str_first'], r['different_key']), axis=1)
 
-
     df_filtered_before_bbox['diff_item_A_str_first_bbox_proportion'] = df_filtered_before_bbox.apply(lambda r: calculate_size_proportions(r['diff_item_A_str_first_bbox'], r['A_img_size']), axis=1)
     df_filtered_before_bbox['diff_item_B_str_first_bbox_proportion'] = df_filtered_before_bbox.apply(lambda r: calculate_size_proportions(r['diff_item_B_str_first_bbox'], r['B_img_size']), axis=1)
-
 
     df_filtered = df_filtered_before_bbox[df_filtered_before_bbox.apply(lambda r: r_is_above_thresh_or_none(r),axis=1)]
 

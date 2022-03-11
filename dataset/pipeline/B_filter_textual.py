@@ -1,73 +1,56 @@
-import inspect
+import json
 import os
-from collections import Counter, defaultdict
+from collections import Counter
 from copy import deepcopy
 
-import matplotlib.pyplot as plt
-import cv2
 import pandas as pd
-import json
-from nltk.corpus import wordnet as wn
 
-from dataset.utils.PairFilter import PairsFilter, empty_clusters, final_reject
-from dataset.config import imsitu_path, imsitu_images_path, AB_matches_path, \
-    columns_to_serialize, \
-    AB_matches_no_dups_path, SPLIT, AB_matches_filtered_dev_pairs_path, \
-    AB_matches_filtered_textual, swig_path
+from utils.PairFilter import PairsFilter, empty_clusters, final_reject
+from utils.utils import imsitu_path, AB_matches_path, columns_to_serialize, SPLIT, AB_matches_filtered_textual
 
-from dataset.utils.visualization import visualize_pair
-
-different_data_top_items = ['agent', 'item', 'verb', 'tool', 'destination', 'object',
-                         'source', 'target', 'victim', 'food', 'vehicle', 'coagent', 'surface',
-                         'substance', 'agentpart', 'instrument', 'container', 'contact',
-                         'obstacle', 'goalitem', 'addressee', 'sliceditem', 'brancher', 'start',
-                         'path', 'goods', 'student', 'focus', 'decomposer']
-different_keys_to_filter = different_data_top_items
-DEV_ANALOGIES_PAIRS = False
-print(f"DEV_ANALOGIES: {DEV_ANALOGIES_PAIRS}, handing NO-DUPS file.")
 imsitu = json.load(open(os.path.join(imsitu_path, "imsitu_space.json")))
 nouns = imsitu["nouns"]
 
 def main():
-    imsitu = json.load(open(os.path.join(imsitu_path, "imsitu_space.json")))
-    nouns = imsitu["nouns"]
-    verbs = imsitu['verbs']
-    if DEV_ANALOGIES_PAIRS:
-        df = get_df_no_dups()
-    else:
-        df = read_full_df()
+    df = read_full_df()
 
-    df['diff_item_A_str_first'] = df['diff_item_A_str'].apply(lambda l: l[0] if type(l) == list else l)
-    df['diff_item_B_str_first'] = df['diff_item_B_str'].apply(lambda l: l[0] if type(l) == list else l)
+    df = initial_filters(df)
 
+    pairs_for_key_dict = create_legit_pairs_by_rules(df)
+
+    df_filtered = filter_by_legit_pairs_and_sample(df, pairs_for_key_dict)
+
+    dump_filtered_AB_pairs(df_filtered)
+
+
+def initial_filters(df):
     df_filtered_before_filter = deepcopy(df)
-    data_split = json.load(open(os.path.join(swig_path, f"{SPLIT}.json")))
+    data_split = json.load(open(os.path.join(imsitu_path, f"{SPLIT}.json")))
     df_filtered = df
     df_filtered['frames_with_single_diff'] = df_filtered.apply(lambda r: get_a_b_diffs_set_str(r, data_split), axis=1)
     df_filtered['num_frames_with_single_diff'] = df_filtered['frames_with_single_diff'].apply(lambda x: len(x))
     print(df_filtered['num_frames_with_single_diff'].value_counts())
     df_filtered = df_filtered[df_filtered['num_frames_with_single_diff'] <= 2]  # >91% of the data
-    print(f"*** multiple AB changes started with {len(df_filtered_before_filter)} and received {len(df_filtered)}, which is {round(len(df_filtered)/len(df_filtered_before_filter) * 100, 2)}")
+    print(
+        f"*** multiple AB changes started with {len(df_filtered_before_filter)} and received {len(df_filtered)}, which is {round(len(df_filtered) / len(df_filtered_before_filter) * 100, 2)}")
     df = df_filtered
-
+    different_keys_to_filter = set(df['different_key'].values)
+    different_keys_to_filter = [x for x in different_keys_to_filter if x not in ['place', 'source', 'destination']]
     len_start_df = len(df)
     print(df['different_key'].value_counts())
     df = df[df['different_key'].isin(different_keys_to_filter)]
     len_df_different_key = len(df)
     df = df[df['keys'].apply(lambda keys: 'coagent' not in keys)]
     len_df_without_co_agent = len(df)
-    df = df[df.apply(lambda r: not words_lists_intersect(r['diff_item_A_str'], r['diff_item_B_str'], r['different_key']), axis=1)]
+    df = df[
+        df.apply(lambda r: not words_lists_intersect(r['diff_item_A_str'], r['diff_item_B_str'], r['different_key']),
+                 axis=1)]
     len_df_without_intersecting_words_list = len(df)
     df_length_stats = {'len_start_df': len_start_df, 'len_df_different_key': len_df_different_key,
-                       'len_df_without_co_agent': len_df_without_co_agent, 'len_df_without_intersecting_words_list': len_df_without_intersecting_words_list}
+                       'len_df_without_co_agent': len_df_without_co_agent,
+                       'len_df_without_intersecting_words_list': len_df_without_intersecting_words_list}
     print(df_length_stats)
-
-    pairs_for_key_dict = create_legit_pairs_by_rules(df, nouns, verbs)
-
-    df_filtered = filter_by_legit_pairs_and_sample(df, pairs_for_key_dict)
-
-    if not DEV_ANALOGIES_PAIRS:
-        dump_filtered_AB_pairs(df_filtered)
+    return df
 
 
 def read_full_df():
@@ -75,44 +58,29 @@ def read_full_df():
     for c in columns_to_serialize:
         if c in df.columns:
             df[c] = df[c].apply(json.loads)
+
+    df['diff_item_A_str_first'] = df['diff_item_A_str'].apply(lambda l: l[0] if type(l) == list else l)
+    df['diff_item_B_str_first'] = df['diff_item_B_str'].apply(lambda l: l[0] if type(l) == list else l)
+
     return df
 
 
-def get_df_no_dups():
-    if os.path.exists(AB_matches_no_dups_path):
-        df = pd.read_csv(AB_matches_no_dups_path)
-        for c in columns_to_serialize:
-            df[c] = df[c].apply(json.loads)
-    else:
-        print(f"no_dups not exists, creating")
-        df = read_full_df()
-        df = df.drop_duplicates(subset=['different_key', 'diff_item_A', 'diff_item_B'])
-        for c in columns_to_serialize:
-            if c in df.columns:
-                df[c] = df[c].apply(json.dumps)
-        df.to_csv(AB_matches_no_dups_path, index=False)
-    return df
-
-
-def create_legit_pairs_by_rules(df, nouns, verbs):
+def create_legit_pairs_by_rules(df):
     pairs_filter = PairsFilter()
 
     def sort_pair(x):
         return tuple(list(sorted((tuple((x[0], x[1]))))) + list(sorted(tuple((x[2], x[3])))))
 
+    different_keys_to_filter = set(df['different_key'].values)
     pairs_for_key_dict = {}
     for k in different_keys_to_filter:
         df_different_key = df[df['different_key'] == k]
         print(f'For k {k}, len(df): {len(df_different_key)}')
-        # changed_pairs_counter_for_key = Counter([tuple(sorted(tuple(x))) for x in df_different_key[relevant_keys].values])
-        #### ALL KEYS TO OBSERVE  - changed_pairs_counter_for_key.keys()
         changed_pairs_counter_wn_for_key = Counter([tuple(sort_pair(tuple(x))) for x in df_different_key[pairs_filter.keys].values])
         changed_pairs_wn_for_key = [x[0] for x in changed_pairs_counter_wn_for_key.most_common()]
         legit_pairs_for_k = []
         for t_idx, t in enumerate(changed_pairs_wn_for_key):
             is_legit_k_chagnge = pairs_filter.is_legit_k_chagnge(k, t)
-            if DEV_ANALOGIES_PAIRS:
-                print(f"t_idx: {t_idx}/{len(changed_pairs_wn_for_key)}, {t[:2], is_legit_k_chagnge}")
 
             if is_legit_k_chagnge:
                 # if man->monkey, then monkey->man
@@ -128,7 +96,6 @@ def create_legit_pairs_by_rules(df, nouns, verbs):
         print((k, pairs_stats))
         pairs_for_key_dict[k] = legit_pairs_for_k
 
-    # pprint(pairs_for_key_dict)
     print(f'filtered pairs stats')
     print({k: len(v) for k,v in pairs_for_key_dict.items()})
 
@@ -146,6 +113,7 @@ def create_legit_pairs_by_rules(df, nouns, verbs):
 
 def filter_by_legit_pairs_and_sample(df, pairs_for_key_dict):
     print(f"filter_by_legit_pairs_and_sample...")
+    different_keys_to_filter = set(df['different_key'].values)
     df_filtered_relevant_keys = df[df['different_key'].isin(different_keys_to_filter)]
     df_filtered_relevant_keys['change_triplet'] = df_filtered_relevant_keys[['different_key', 'diff_item_A_str_first', 'diff_item_B_str_first']].apply(lambda r: tuple(r), axis=1)
 
@@ -154,7 +122,6 @@ def filter_by_legit_pairs_and_sample(df, pairs_for_key_dict):
         for pair in diff_key_pairs:
             change_triplets.append((diff_key, *pair[:2]))
     change_triplets_set = set(change_triplets)
-    # assert len(change_triplets) == len(change_triplets_set)
 
     df_examples_for_poc = df_filtered_relevant_keys[df_filtered_relevant_keys['change_triplet'].isin(change_triplets_set)]
     print(f"Filtered by pairs. Got {len(df_examples_for_poc)} from {len(df_filtered_relevant_keys)}")
@@ -169,10 +136,7 @@ def dump_filtered_AB_pairs(df_filtered):
     for c in columns_to_serialize:
         if c in df_filtered.columns:
             df_filtered[c] = df_filtered[c].apply(json.dumps)
-    if DEV_ANALOGIES_PAIRS:
-        df_filtered.to_csv(AB_matches_filtered_dev_pairs_path, index=False)
-    else:
-        df_filtered.to_csv(AB_matches_filtered_textual, index=False)
+    df_filtered.to_csv(AB_matches_filtered_textual, index=False)
     print(f"Dumped df at length {len(df_filtered)} to {AB_matches_filtered_textual}")
     print("Done")
 

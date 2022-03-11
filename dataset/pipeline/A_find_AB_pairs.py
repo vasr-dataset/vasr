@@ -5,16 +5,14 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from utils.utils import AB_matches_path, BAD_IMAGES, get_difference, columns_to_serialize, swig_path, imsitu_path, SPLIT
+
+
 # The split should be train and testdev
 
-from dataset.config import AB_matches_path, imsitu_path, SPLIT, swig_path, columns_to_serialize, BAD_IMAGES, \
-    get_difference
-
-
 def main():
-    imsitu = json.load(open(os.path.join(imsitu_path, "imsitu_space.json")))
-    nouns = imsitu["nouns"]
-    data_split = json.load(open(os.path.join(swig_path, f"{SPLIT}.json")))
+    data_split, nouns = load_imsitu_data()
+
     all_AB_matches = []
     matches_num_for_single_img = []
     for a_img_idx, A_img in tqdm(enumerate(data_split), total=len(data_split), desc=f'Iterating A'):
@@ -23,15 +21,26 @@ def main():
         all_AB_matches += A_B_matches
         if a_img_idx % 1000 == 0:
             print(f"total matches: {len(all_AB_matches)}, average matches_num_for_single_img: {round(np.mean(matches_num_for_single_img), 2)}")
+
+    json_dump_and_write_output_csv(all_AB_matches)
+
+    print("Done")
+
+
+def json_dump_and_write_output_csv(all_AB_matches):
     all_AB_matches_df = pd.DataFrame(all_AB_matches)
     for c in columns_to_serialize:
         if c in all_AB_matches_df:
             all_AB_matches_df[c] = all_AB_matches_df[c].apply(json.dumps)
-
     print(f"Dumping total {len(all_AB_matches_df)} AB matches to {AB_matches_path}")
     all_AB_matches_df.to_csv(AB_matches_path, index=False)
 
-    print("Done")
+
+def load_imsitu_data():
+    imsitu = json.load(open(os.path.join(imsitu_path, "imsitu_space.json")))
+    nouns = imsitu["nouns"]
+    data_split = json.load(open(os.path.join(swig_path, f"{SPLIT}.json")))
+    return data_split, nouns
 
 
 def get_AB_matches_for_A_img(A_img, nouns, data_split):

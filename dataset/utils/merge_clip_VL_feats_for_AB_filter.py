@@ -2,7 +2,7 @@ import shutil
 
 from tqdm import tqdm
 
-from dataset.config import AB_matches_dir, SPLIT
+from utils import AB_matches_dir, SPLIT
 import pandas as pd
 import os
 

@@ -1,19 +1,19 @@
 import json
-from collections import defaultdict
-import numpy as np
 import os
+import pickle
 import random
+from collections import defaultdict
 from copy import deepcopy
 from itertools import combinations
 
+import numpy as np
 import pandas as pd
-import pickle
 from tqdm import tqdm
 
-from dataset.config import imsitu_path, SPLIT, split_to_files, data_path, swig_images_path, \
-    distractors_cache_by_keys_path, get_dict_sim, BAD_IMAGES, columns_to_serialize
-from dataset.utils.run_gsr_solver import solve_analogy, solve_analogy_all_frames, solve_analogy_all_frames_given_distractor
+from dataset.utils.run_gsr_solver import solve_analogy_all_frames_given_distractor
 from dataset.utils.visualization import visualize_analogy_and_distractors, plot_distractors
+from utils.utils import imsitu_path, SPLIT, split_to_files, data_path, \
+    distractors_cache_by_keys_path, get_dict_sim, BAD_IMAGES, columns_to_serialize
 
 counter_found_match = {'try': 0, 'success_all': 0, 'fails': 0}
 verbs_matchs = {'didnt_find': 0, 'tries': 0, 'succeeded': 0}
@@ -25,39 +25,15 @@ clash_with_d_counter = {'true': 0, 'false': 0}
 cases_with_pos_sim = 0
 cases_with_filtered_solution = 0
 distractor_solver_clashes_d = 0
-debug_plot_candidates = False
 
 MAX_NUM_CANDIDATES = 10
 print(f'MAX_NUM_CANDIDATES: {MAX_NUM_CANDIDATES}')
 
 def main(split_file_name):
-    if not os.path.exists(distractors_cache_by_keys_path):
-        create_cache()
-    else:
-        distractors_cache_by_keys = pickle.load(open(distractors_cache_by_keys_path, 'rb'))
-
-    split_file_path = os.path.join(data_path, 'ABCD_matches', split_file_name)
-    print(f"Reading {split_file_path}")
-    all_ABCD_matches_df = pd.read_csv(split_file_path)
-    len_all = len(all_ABCD_matches_df)
-    all_ABCD_matches_df = all_ABCD_matches_df[all_ABCD_matches_df['different_key'] != 'place']
-    print(f"-- Removed place. Now length is {len(all_ABCD_matches_df)}, was {len_all}")
-
-    for c in columns_to_serialize:
-        if c in all_ABCD_matches_df.columns:
-            all_ABCD_matches_df[c] = all_ABCD_matches_df[c].apply(json.loads)
-    data_split = json.load(open(os.path.join(imsitu_path, f"{SPLIT}.json")))
-
-    all_B_distractors_data = []
-    all_C_distractors_data = []
-    plot = False
-    modolu = 1000 if SPLIT != 'train' else 10000
-    # modolu = 100 if SPLIT != 'train' else 10000
+    all_ABCD_matches_df, all_B_distractors_data, all_C_distractors_data, data_split,\
+    distractors_cache_by_keys, modolu, plot = init_analogies(split_file_name)
 
     for idx, (r_idx, r) in enumerate(tqdm(all_ABCD_matches_df.iterrows(), desc='Iteration analogies...', total=len(all_ABCD_matches_df))):
-        if debug_plot_candidates and idx > 10:
-            print("DEBUGGING, EXIT!")
-            exit()
         B_distractors_solveable, C_distractors_solveable = get_distractor_images(r, data_split, distractors_cache_by_keys)
         all_B_distractors_data.append(B_distractors_solveable)
         all_C_distractors_data.append(C_distractors_solveable)
@@ -67,7 +43,12 @@ def main(split_file_name):
         if r_idx % modolu == 0:
             print_stats(all_B_distractors_data, all_C_distractors_data, r_idx, split_file_name)
 
-    print(f"cases_with_pos_sim: {cases_with_pos_sim}, cases_with_filtered_solution: {cases_with_filtered_solution}, clash_with_d_counter: {clash_with_d_counter}, distractor_solver_clashes_d: {distractor_solver_clashes_d}, distractors_stats: {distractors_stats}")
+    return dump_output(all_ABCD_matches_df, all_B_distractors_data, all_C_distractors_data, split_file_name)
+
+
+def dump_output(all_ABCD_matches_df, all_B_distractors_data, all_C_distractors_data, split_file_name):
+    print(
+        f"cases_with_pos_sim: {cases_with_pos_sim}, cases_with_filtered_solution: {cases_with_filtered_solution}, clash_with_d_counter: {clash_with_d_counter}, distractor_solver_clashes_d: {distractor_solver_clashes_d}, distractors_stats: {distractors_stats}")
     all_ABCD_matches_df['B_distractors_data'] = all_B_distractors_data
     all_ABCD_matches_df['C_distractors_data'] = all_C_distractors_data
     print(all_ABCD_matches_df['different_key'].value_counts())
@@ -76,11 +57,32 @@ def main(split_file_name):
             all_ABCD_matches_df[c] = all_ABCD_matches_df[c].apply(json.dumps)
     split_file_name_out = get_analogies_name(split_file_name)
     out_path = os.path.join(data_path, 'split_distractors', split_file_name_out)
-    # if SPLIT == 'train':
-    #     all_ABCD_matches_df.drop(columns=['distractors_data'], inplace=True)
     all_ABCD_matches_df.to_csv(out_path, index=False)
     print(f"Dumped {len(all_ABCD_matches_df)} analogies of SPLIT {SPLIT} to {out_path}")
     return all_ABCD_matches_df
+
+
+def init_analogies(split_file_name):
+    if not os.path.exists(distractors_cache_by_keys_path):
+        create_cache()
+    else:
+        distractors_cache_by_keys = pickle.load(open(distractors_cache_by_keys_path, 'rb'))
+    split_file_path = os.path.join(data_path, 'ABCD_matches', split_file_name)
+    print(f"Reading {split_file_path}")
+    all_ABCD_matches_df = pd.read_csv(split_file_path)
+    len_all = len(all_ABCD_matches_df)
+    all_ABCD_matches_df = all_ABCD_matches_df[all_ABCD_matches_df['different_key'] != 'place']
+    print(f"-- Removed place. Now length is {len(all_ABCD_matches_df)}, was {len_all}")
+    for c in columns_to_serialize:
+        if c in all_ABCD_matches_df.columns:
+            all_ABCD_matches_df[c] = all_ABCD_matches_df[c].apply(json.loads)
+    data_split = json.load(open(os.path.join(imsitu_path, f"{SPLIT}.json")))
+    all_B_distractors_data = []
+    all_C_distractors_data = []
+    plot = False
+    modolu = 1000 if SPLIT != 'train' else 10000
+    # modolu = 100 if SPLIT != 'train' else 10000
+    return all_ABCD_matches_df, all_B_distractors_data, all_C_distractors_data, data_split, distractors_cache_by_keys, modolu, plot
 
 
 def print_stats(all_B_distractors_data, all_C_distractors_data, r_idx, split_file_name):

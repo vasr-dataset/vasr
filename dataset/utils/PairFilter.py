@@ -1,18 +1,15 @@
-import inspect
 from collections import defaultdict
 
 from nltk.corpus import wordnet as wn
-from dataset.utils.wordnet_consts import general_synsets, places_clusters, blacklist_pairs, human_keys, sick_cluster, arrest_cluster, \
+
+from utils.wordnet_consts import general_synsets, human_keys, sick_cluster, arrest_cluster, \
     mashing_cluster, cheering_cluster, nipping_cluster, stretching_cluster, raining_cluster, smiling_cluster, \
     wadling_cluster, sprinting_cluster, parading_cluster, weeping_cluster, slipping_cluster, kneeling_cluster, \
     swooping_cluster, blacklist_individuals_ambiguous
 
-
 empty_clusters = []
 final_reject = []
 
-
-class TimeoutException(Exception): pass
 
 class PairsFilter(object):
     def __init__(self):
@@ -39,54 +36,18 @@ class PairsFilter(object):
 
 
     def is_legit_k_chagnge(self, k, t):
-        if k in ['place', 'source', 'destination']:
-            return self.is_legit_place_change(t)
-        elif k == 'verb':
+        if k == 'verb':
             return self.is_legit_verb_change(t)
         else:
             return self.is_legit_object_change(t)
 
     def is_legit_object_change(self, t):
-        try:
-            return self.is_legit_object_change_inner(t)
-        except TimeoutException as e:
-            print(f"Timed out!, {t}")
-        return False
-
-    def is_legit_place_change(self, t):
-        t_dict = dict(zip(self.keys, t))
-
-        clusters_A = []
-        clusters_B = []
-        for cluster_name, cluster_list in places_clusters.items():
-            if t_dict['diff_item_A_str_first'] in cluster_list:
-                clusters_A.append(cluster_name)
-            if t_dict['diff_item_B_str_first'] in cluster_list:
-                clusters_B.append(cluster_name)
-        words_AB = {t_dict['diff_item_A_str_first'], t_dict['diff_item_B_str_first']}
-        clusters_AB = set(clusters_A).union(clusters_B)
-        if len(set({'inside_rooms', 'outdoor_nature_ambiguous'}.intersection(clusters_AB))) == 2:
-            return True
-        elif 'outdoor_nature_ambiguous' in clusters_AB:
-            return False
-        for p in blacklist_pairs:
-            if len(words_AB.intersection(set(p))) >= 2:
-                return False
-        if len(clusters_A) > 0 and len(clusters_B) > 0 and len(set(clusters_A).intersection(clusters_B)) == 0:
-            return True
-        if clusters_A == clusters_B == ['specific']:
-            return True
-        return False
-
-    def is_legit_object_change_inner(self, t):
         t_dict = dict(zip(self.keys, t))
         wn_x = wn.synset_from_pos_and_offset('n', int(t_dict['diff_item_A'].split("n")[1]))
         wn_y = wn.synset_from_pos_and_offset('n', int(t_dict['diff_item_B'].split("n")[1]))
-        # self.print_all_methods(wn_x, wn_y)
         x_name = wn_x.lemmas()[0].name()
         y_name = wn_y.lemmas()[0].name()
         lowest_common_hypernyms = wn_x.lowest_common_hypernyms(wn_y)
-        common_hypernyms = wn_x.common_hypernyms(wn_y)
         try:
             x_clusters = self.get_clusters(wn_x, x_name)
             y_clusters = self.get_clusters(wn_y, y_name)
@@ -97,18 +58,6 @@ class PairsFilter(object):
             return False
         xy_clusters = x_clusters + y_clusters
         xy_words = [x_name, y_name]
-        # print(f"{x_name}, {x_clusters}")
-        # print(f"{y_name}, {y_clusters}")
-        if len(human_keys.intersection(xy_words)) >= 2: # Not allowing two general human
-            self.filter_counts['R_two_human_keys'] += 1
-            return False
-        if self.special_cases_filter_pair(x_name, y_name):
-            self.filter_counts['R_blacklists'] += 1
-            return False
-        if any(c == [] for c in [x_clusters, y_clusters]):
-            """ Not accepting empty clusters"""
-            self.filter_counts['R_empty_cluster'] += 1
-            return False
 
         if x_clusters == y_clusters and len({'animal'}.intersection(xy_clusters)) == 0 \
                 and len(lowest_common_hypernyms) > 0 and len(human_keys.intersection(xy_words)) == 0:
@@ -140,18 +89,6 @@ class PairsFilter(object):
         if 'male' in xy_clusters and 'female' in xy_clusters:
             self.filter_counts['A_male_to_female'] += 1
             return True
-        if 'person' in xy_clusters and 'group' in xy_clusters:
-            self.filter_counts['R_person_and_group'] += 1
-            return False
-        if ('ball' in x_name and y_name == 'ball') or (x_name == 'ball' and 'ball' in y_name):
-            self.filter_counts['R_ball_and_specific_ball'] += 1
-            return False
-        if ('_player' in x_name and y_name == 'ballplayer') or (x_name == 'ballplayer' and '_player' in y_name):
-            self.filter_counts['R_player_and_specific_player'] += 1
-            return False
-        if 'plant' in x_clusters and 'plant_part' in y_clusters:
-            self.filter_counts['R_plant_and_plant_part'] += 1
-            return False
         if len(human_keys.intersection(xy_clusters)) == 0 and len(set(x_clusters).intersection(y_clusters)) == 0:
             ''' If no human key, and different clusters - it's ok'''
             self.filter_counts['A_different_clusters_no_human'] += 1
@@ -170,19 +107,6 @@ class PairsFilter(object):
         global final_reject
         final_reject.append(t_dict)
         return False
-
-    def print_all_methods(self, wn_x, wn_y):
-        x_methods_lst = inspect.getmembers(wn_x, predicate=inspect.ismethod)
-        for m in x_methods_lst:
-            print(m[0])
-            try:
-                if 'other' in inspect.getargspec(m[1]).args:
-                    print((wn_x, wn_y, m[0], m[1](wn_y)))
-                else:
-                    print((wn_x, wn_y, m[0], m[1]()))
-            except:
-                pass
-            print()
 
     def is_legit_verb_change(self, t):
         t_dict = dict(zip(self.keys, t))
@@ -241,8 +165,6 @@ class PairsFilter(object):
             clusters = ['wood']
         if x_str.lower() in ['crop']:
             clusters = ['plant']
-        # if x_str.lower() in ['mashroom']:
-        #     clusters = ['food']
         if x_str.lower() in ['grass', 'field']:
             clusters = ['field']
         if x_str.lower() in ['police', 'policeman', 'detective', 'motorcycle_cop', 'motorcycle cop'] or ('_' in x_str and 'cop' in x_str.split("_")):
@@ -261,15 +183,6 @@ class PairsFilter(object):
                     s_clusters.append(s)
         return s_clusters
 
-    def special_cases_filter_pair(self, x_name, y_name):
-        blacklist_words = ['work force', 'people', 'dissenter']
-        for w in blacklist_words:
-            if w == x_name or w == y_name:
-                return True
-        for p in blacklist_pairs:
-            if len(set(p).intersection({x_name, y_name})) == 2:
-                return True
-        return False
 
 def has_hypernym_wn_synset_inner(word_synset, category_synset):
     for match in word_synset.lowest_common_hypernyms(category_synset):
@@ -281,7 +194,6 @@ def has_hypernym_wn_synset(word_synset, category_synset):
     return has_hypernym_wn_synset_inner(word_synset, category_synset) or has_hypernym_wn_synset_inner(category_synset, word_synset)
 
 
-
 def objects_are_type_of_each_other(x, y):
     for syn_x in wn.synsets(x):
         for syn_y in wn.synsets(y):
@@ -289,17 +201,3 @@ def objects_are_type_of_each_other(x, y):
                 return True
     return False
 
-
-def has_hypernym_inner(word, category):
-    # Assume the category always uses the most popular sense
-    cat_syn = wn.synsets(category)[0]
-
-    # For the input, check all senses
-    for syn in wn.synsets(word):
-        for match in syn.lowest_common_hypernyms(cat_syn):
-            if match == cat_syn:
-                return True
-    return False
-
-def has_hypernym(word, category):
-    return has_hypernym_inner(word, category) or has_hypernym_inner(category, word)

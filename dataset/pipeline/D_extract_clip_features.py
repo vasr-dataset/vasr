@@ -2,33 +2,18 @@ import argparse
 import json
 import os
 from collections import defaultdict
-import matplotlib.pyplot as plt
-
-# os.environ['CUDA_VISIBLE_DEVICES'] = '4'
-# In order to save time if you already extracted features once, run this file with EXTRACT_FEATS = false
 
 import clip
 import cv2
 import numpy as np
 import pandas as pd
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
-
-from dataset.config import SPLIT, AB_matches_filtered_path, imsitu_path, plots_path, \
-    AB_matches_filtered_visual, AB_matches_vision_and_language_feats_path, \
-    AB_matches_objects_no_bbox_feats_path, \
-    AB_matches_vision_and_language_feats_to_filter, AB_matches_vision_and_language_feats_to_keep, swig_images_path, \
-    columns_to_serialize, swig_path
-
 import torch
 from PIL import Image
 
-vision_language_sim_plots_path = os.path.join(plots_path, 'vision_and_language_clip_filter_ab_similarity')
-plots_filtered_path = os.path.join(vision_language_sim_plots_path, 'filtered')
-plots_good_pairs_path = os.path.join(vision_language_sim_plots_path, 'good_pairs')
-for d in [vision_language_sim_plots_path, plots_filtered_path, plots_good_pairs_path]:
-    if not os.path.exists(d):
-        os.mkdir(d)
+from config import swig_images_path
+from utils.utils import SPLIT, AB_matches_filtered_visual, AB_matches_vision_and_language_feats_path, \
+    AB_matches_objects_no_bbox_feats_path, \
+    columns_to_serialize, swig_path
 
 absolute_truth_path = os.path.join(swig_path, f'{SPLIT}.json')
 imsitu_space_path = os.path.join(swig_path, f'imsitu_space.json')
@@ -38,15 +23,9 @@ verbs = imsitu_space["verbs"]
 nouns = imsitu_space["nouns"]
 from tqdm import tqdm
 
-SAMPLE = False
-if SAMPLE:
-    print(f"***** SAMPLE *****")
-
 filter_stats = defaultdict(int)
 
 def main():
-
-    print(f"D EXTRACT_FEATS")
     parser = argparse.ArgumentParser()
     parser.add_argument('--indices', default=False, help='to extract V&L features in parallel')
     args = parser.parse_args()
@@ -54,26 +33,8 @@ def main():
 
 
 def extract_clip_sim(indices=False):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model, preprocess = clip.load("ViT-B/32", device=device)
-    if SAMPLE:
-        # df = pd.read_csv(AB_matches_filtered_visual, nrows=2000)
-        df = pd.read_csv(AB_matches_filtered_visual)
-        # df = df.query("A_img == 'plowing_188.jpg' and B_img == 'plowing_211.jpg'")
-        df = df[df['different_key'] != 'verb']
-        df = df[0:100]
-    else:
-        df = pd.read_csv(AB_matches_filtered_visual)
-    print(f'Read df at length {len(df)}')
-    if indices:
-        start_idx, end_idx = [int(x) for x in indices.split(",")]
-        df = df.iloc[start_idx: end_idx]
-        print(f"Taking indices, start: {start_idx}, end: {end_idx}, working on dataset in length {len(df)}")
-    for c in columns_to_serialize:
-        if c in df.columns:
-            df[c] = df[c].apply(json.loads)
-    df['A_bounding_box'] = df['A_data'].apply(lambda x: x['A_bounding_box'])
-    df['B_bounding_box'] = df['B_data'].apply(lambda x: x['B_bounding_box'])
+    device, df, model, preprocess = initialize_model_and_data(indices)
+
     all_items_with_feats_objects_or_verb = []
     all_items_without_feats_objects_no_bbox = []
     print(df['different_key'].value_counts().head(10))
@@ -84,27 +45,22 @@ def extract_clip_sim(indices=False):
             A_bbox_diff_key = r['A_bounding_box'][r['different_key']]
             B_bbox_diff_key = r['B_bounding_box'][r['different_key']]
             if [-1, -1, -1, -1] in [A_bbox_diff_key, B_bbox_diff_key]:
-                A_img_data_full_img = get_clip_img(device, preprocess, A_img_path)
-                B_img_data_full_img = get_clip_img(device, preprocess, B_img_path)
-                vl_feats_full_img = get_feats_based_on_img(A_img_data_full_img, B_img_data_full_img, device, model, r, img_type='full_img')
-                r['vl_feats_full_img'] = vl_feats_full_img
-                all_items_without_feats_objects_no_bbox.append(r)
-                continue
-            # continue # REMOVE ME!
-            A_img_data_bbox = get_clip_img(device, preprocess, A_img_path, bbox=A_bbox_diff_key)
-            B_img_data_bbox = get_clip_img(device, preprocess, B_img_path, bbox=B_bbox_diff_key)
-            vl_feats_bbox = get_feats_based_on_img(A_img_data_bbox, B_img_data_bbox, device, model, r, img_type='bbox')
-            r['vl_feats_bbox'] = vl_feats_bbox
+                extract_full_img_feats(A_img_path, B_img_path, all_items_without_feats_objects_no_bbox, device, model,
+                                       preprocess, r)
+            else:
+                extract_bbox_feats(A_bbox_diff_key, A_img_path, B_bbox_diff_key, B_img_path, device, model, preprocess,
+                                   r)
         else:
             r['vl_feats_bbox'] = None
-        # continue  # REMOVE ME!
-        A_img_data_full_img = get_clip_img(device, preprocess, A_img_path)
-        B_img_data_full_img = get_clip_img(device, preprocess, B_img_path)
-        vl_feats_full_img = get_feats_based_on_img(A_img_data_full_img, B_img_data_full_img, device, model, r, img_type='full_img')
-        r['vl_feats_full_img'] = vl_feats_full_img
-        all_items_with_feats_objects_or_verb.append(r)
+        extract_full_img_feats(A_img_path, B_img_path, all_items_with_feats_objects_or_verb, device, model,
+                               preprocess, r)
 
     print(f"from {len(df)}, {len(all_items_with_feats_objects_or_verb)} with feats, {len(all_items_without_feats_objects_no_bbox)} all_items_without_feats_objects_no_bbox")
+    serialize_and_dump(all_items_with_feats_objects_or_verb, all_items_without_feats_objects_no_bbox, df, indices)
+    print("Done")
+
+
+def serialize_and_dump(all_items_with_feats_objects_or_verb, all_items_without_feats_objects_no_bbox, df, indices):
     all_items_objects_no_bbox_feats_df = pd.DataFrame(all_items_without_feats_objects_no_bbox)
     all_items_with_feats_objects_or_verb_df = pd.DataFrame(all_items_with_feats_objects_or_verb)
     for c in columns_to_serialize:
@@ -112,26 +68,53 @@ def extract_clip_sim(indices=False):
             all_items_with_feats_objects_or_verb_df[c] = all_items_with_feats_objects_or_verb_df[c].apply(json.dumps)
         if c in all_items_objects_no_bbox_feats_df.columns:
             all_items_objects_no_bbox_feats_df[c] = all_items_objects_no_bbox_feats_df[c].apply(json.dumps)
-
     AB_matches_objects_or_verb_feats_path_updated = AB_matches_vision_and_language_feats_path
     AB_matches_objects_no_bbox_feats_path_updated = AB_matches_objects_no_bbox_feats_path
-    if SAMPLE:
-        AB_matches_objects_or_verb_feats_path_updated = AB_matches_vision_and_language_feats_path.replace(".csv","_debug.csv")
-        AB_matches_objects_no_bbox_feats_path_updated = AB_matches_objects_no_bbox_feats_path.replace(".csv", "_debug.csv")
-    elif indices:
-        AB_matches_objects_or_verb_feats_path_updated = AB_matches_vision_and_language_feats_path.replace(".csv",f"_indices_{indices}.csv")
-        AB_matches_objects_no_bbox_feats_path_updated = AB_matches_objects_no_bbox_feats_path.replace(".csv", f"_indices_{indices}.csv")
-
+    if indices:
+        AB_matches_objects_or_verb_feats_path_updated = AB_matches_vision_and_language_feats_path.replace(".csv",
+                                                                                                          f"_indices_{indices}.csv")
+        AB_matches_objects_no_bbox_feats_path_updated = AB_matches_objects_no_bbox_feats_path.replace(".csv",
+                                                                                                      f"_indices_{indices}.csv")
     all_items_objects_no_bbox_feats_df.to_csv(AB_matches_objects_no_bbox_feats_path_updated)
-    print(f"Wrote {len(all_items_objects_no_bbox_feats_df)} (from {len(df)}) to {AB_matches_objects_no_bbox_feats_path_updated}")
-
-    # print("Exiting, remove me!")
-    # exit()
-
+    print(
+        f"Wrote {len(all_items_objects_no_bbox_feats_df)} (from {len(df)}) to {AB_matches_objects_no_bbox_feats_path_updated}")
     all_items_with_feats_objects_or_verb_df.to_csv(AB_matches_objects_or_verb_feats_path_updated)
-    print(f"Wrote {len(all_items_with_feats_objects_or_verb_df)} (from {len(df)}) to {AB_matches_objects_or_verb_feats_path_updated}")
+    print(
+        f"Wrote {len(all_items_with_feats_objects_or_verb_df)} (from {len(df)}) to {AB_matches_objects_or_verb_feats_path_updated}")
 
-    print("Done")
+
+def extract_bbox_feats(A_bbox_diff_key, A_img_path, B_bbox_diff_key, B_img_path, device, model, preprocess, r):
+    A_img_data_bbox = get_clip_img(device, preprocess, A_img_path, bbox=A_bbox_diff_key)
+    B_img_data_bbox = get_clip_img(device, preprocess, B_img_path, bbox=B_bbox_diff_key)
+    vl_feats_bbox = get_feats_based_on_img(A_img_data_bbox, B_img_data_bbox, device, model, r, img_type='bbox')
+    r['vl_feats_bbox'] = vl_feats_bbox
+
+
+def extract_full_img_feats(A_img_path, B_img_path, all_items_without_feats_objects_no_bbox, device, model, preprocess,
+                           r):
+    A_img_data_full_img = get_clip_img(device, preprocess, A_img_path)
+    B_img_data_full_img = get_clip_img(device, preprocess, B_img_path)
+    vl_feats_full_img = get_feats_based_on_img(A_img_data_full_img, B_img_data_full_img, device, model, r,
+                                               img_type='full_img')
+    r['vl_feats_full_img'] = vl_feats_full_img
+    all_items_without_feats_objects_no_bbox.append(r)
+
+
+def initialize_model_and_data(indices):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model, preprocess = clip.load("ViT-B/32", device=device)
+    df = pd.read_csv(AB_matches_filtered_visual)
+    print(f'Read df at length {len(df)}')
+    if indices:
+        start_idx, end_idx = [int(x) for x in indices.split(",")]
+        df = df.iloc[start_idx: end_idx]
+        print(f"Taking indices, start: {start_idx}, end: {end_idx}, working on dataset in length {len(df)}")
+    for c in columns_to_serialize:
+        if c in df.columns:
+            df[c] = df[c].apply(json.loads)
+    df['A_bounding_box'] = df['A_data'].apply(lambda x: x['A_bounding_box'])
+    df['B_bounding_box'] = df['B_data'].apply(lambda x: x['B_bounding_box'])
+    return device, df, model, preprocess
 
 
 def get_feats_based_on_img(A_img_data, B_img_data, device, model, r, img_type):
@@ -166,7 +149,6 @@ def get_feats_based_on_img(A_img_data, B_img_data, device, model, r, img_type):
 def get_clip_text(item, txt_data=None):
     item = item.lower()
     if txt_data:
-        # changing ann[different_key['different_key']
         verb = txt_data['verb'] if txt_data['different_key'] != 'verb' else item
         verb_template = verbs[verb]['abstract']
         sent_template_subst = verb_template.lower()
@@ -184,7 +166,6 @@ def get_clip_text(item, txt_data=None):
             return f"A photo of an {item}"
         else:
             return f"A photo of a {item}"
-
 
 
 def aggregate_sents_to_classses(sent1, sent2, device):
@@ -281,44 +262,6 @@ def get_clip_img(device, preprocess, file_path, bbox=None):
         img_data = {'tensor': preprocess(img).unsqueeze(0).to(device)}
     return img_data
 
-
-'''
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 0,100000
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 100000,200000
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 200000,300000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 300000,400000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 400000,500000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 500000,600000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 600000,700000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 700000,800000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 800000,900000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 900000,1000000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 1000000,1100000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 1100000,1200000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 1200000,1300000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 1300000,1400000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 1400000,1500000
-CUDA_VISIBLE_DEVICES=2 python src_dataset_generation/D_extract_clip_features.py --indices 1500000,1650000
-
-
-CUDA_VISIBLE_DEVICES=2 python src_dataset_generation/D_extract_clip_features.py --indices 0,20
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 0,50000
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 50000,100000
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 100000,150000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 150000,200000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 200000,250000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 300000,350000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 250000,300000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 350000,400000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 400000,450000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 450000,500000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 500000,550000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 550000,600000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 600000,650000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 650000,700000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 700000,750000
-CUDA_VISIBLE_DEVICES=2 python src_dataset_generation/D_extract_clip_features.py --indices 750000,850000
-'''
 
 if __name__ == '__main__':
     print('Important: If you ran with --indices, run "merge_train_clip_VL_feats_for_AB_filter.py" later')

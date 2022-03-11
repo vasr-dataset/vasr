@@ -1,30 +1,15 @@
-import argparse
 import json
 import os
 from collections import defaultdict
-import matplotlib.pyplot as plt
 
-# os.environ['CUDA_VISIBLE_DEVICES'] = '4'
-# In order to save time if you already extracted features once, run this file with EXTRACT_FEATS = false
-
-import clip
-import cv2
 import numpy as np
 import pandas as pd
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
 
-from nltk.corpus import wordnet as wn
-
-from dataset.utils.PairFilter import PairsFilter
-from dataset.config import SPLIT, AB_matches_filtered_path, imsitu_path, plots_path, \
-    AB_matches_filtered_visual, AB_matches_vision_and_language_feats_path, \
-    AB_matches_objects_no_bbox_feats_path, \
-    AB_matches_vision_and_language_feats_to_filter, AB_matches_vision_and_language_feats_to_keep, swig_images_path, \
+from utils.PairFilter import PairsFilter
+from utils.utils import SPLIT, AB_matches_filtered_path, plots_path, AB_matches_filtered_visual, \
+    AB_matches_vision_and_language_feats_path, AB_matches_objects_no_bbox_feats_path, \
+    AB_matches_vision_and_language_feats_to_filter, AB_matches_vision_and_language_feats_to_keep, \
     columns_to_serialize, swig_path
-
-import torch
-from PIL import Image
 
 vision_language_sim_plots_path = os.path.join(plots_path, 'vision_and_language_clip_filter_ab_similarity')
 plots_filtered_path = os.path.join(vision_language_sim_plots_path, 'filtered')
@@ -41,23 +26,13 @@ verbs = imsitu_space["verbs"]
 nouns = imsitu_space["nouns"]
 from tqdm import tqdm
 
-SAMPLE = False
-if SAMPLE:
-    print(f"***** SAMPLE *****")
-
 filter_stats = defaultdict(int)
 
 def main():
-
-    print(f" CLASSIFY_AMBIGUOUS_IMAGE_PAIR")
-    classify_df_given_feats()
-
-
-def classify_df_given_feats():
     df_verb_objects_feats, df_objects_no_bbox_feats, initial_df = get_all_dataframes()
     df_with_feats = pd.concat([df_verb_objects_feats, df_objects_no_bbox_feats])
-    # df_with_feats = df_with_feats.query(f'diff_item_A_str_first == "vegetable" and diff_item_B_str_first == "meat" and A_img == "frying_43.jpg" and B_img == "frying_237.jpg"')
     print(f'Started with {len(initial_df)}, of which {len(df_with_feats)} has V&L feats, and {len(df_objects_no_bbox_feats)} dont')
+
     all_items_to_filter = []
     all_items_to_keep = []
     all_items_with_same_clip_keys = []
@@ -87,9 +62,6 @@ def classify_df_given_feats():
             all_items_with_same_clip_keys.append(r)
             should_remove = True
 
-        # if idx % 1 == 0:
-        #     additional_txt = get_title_text(filter_reason_bbox, filter_reason_img, should_remove, should_remove_bbox)
-        #     visualize_pair_clip_all_feats(r, additional_txt, all_items_to_filter, all_items_to_keep)
         if idx == 1000 or (0 < idx and idx % modulo == 0):
             print_stats(all_items_to_filter, all_items_to_keep, idx)
         if should_remove:
@@ -101,21 +73,24 @@ def classify_df_given_feats():
     print("filter_stats")
     print(filter_stats)
 
+    dump_outputs(all_items_to_filter, all_items_to_keep, df_objects_no_bbox_feats, df_with_feats)
+
+
+def dump_outputs(all_items_to_filter, all_items_to_keep, df_objects_no_bbox_feats, df_with_feats):
     all_items_to_filter_df = pd.DataFrame(all_items_to_filter)
     print(f"Final. From {len(df_with_feats)} V&L feats, filter: {len(all_items_to_filter_df)} "
           f"({round(len(all_items_to_filter_df) / len(df_with_feats) * 100, 1)}%), "
           f"keeping: {len(all_items_to_keep)}")
-    print(f"Writing filtered items to: {AB_matches_vision_and_language_feats_to_filter}, and items to keep to {AB_matches_vision_and_language_feats_to_keep}")
+    print(
+        f"Writing filtered items to: {AB_matches_vision_and_language_feats_to_filter}, and items to keep to {AB_matches_vision_and_language_feats_to_keep}")
     all_items_to_filter_df.to_csv(AB_matches_vision_and_language_feats_to_filter)
     all_items_to_keep_df = pd.DataFrame(all_items_to_keep)
     all_items_to_keep_df.to_csv(AB_matches_vision_and_language_feats_to_keep)
-    # if SAMPLE:
-    #     df_objects_no_bbox_feats = df_objects_no_bbox_feats.sample(len(all_items_to_keep_df) * 10)
-
-    AB_matches_filtered_path_final = AB_matches_filtered_path if SAMPLE == False else AB_matches_filtered_path.replace(".csv", "_debug.csv")
-    print(f"In addition, {len(df_objects_no_bbox_feats)} dont have feats. Merging with the items to keep: {len(all_items_to_keep_df)}\n"
-          f"and writing to the final path: {AB_matches_filtered_path_final}")
-    # df_filtered = pd.concat([all_items_to_keep_df, df_objects_no_bbox_feats])
+    AB_matches_filtered_path_final = AB_matches_filtered_path if SAMPLE == False else AB_matches_filtered_path.replace(
+        ".csv", "_debug.csv")
+    print(
+        f"In addition, {len(df_objects_no_bbox_feats)} dont have feats. Merging with the items to keep: {len(all_items_to_keep_df)}\n"
+        f"and writing to the final path: {AB_matches_filtered_path_final}")
     df_filtered = all_items_to_keep_df
     print(f"Finally writing {len(df_filtered)} to {AB_matches_filtered_path_final}")
     for c in columns_to_serialize:
@@ -136,13 +111,9 @@ def update_clip_chosen_items(r, img_name):
 
 def get_all_dataframes():
     AB_matches_vision_and_language_feats_path_final = AB_matches_vision_and_language_feats_path
-    if SAMPLE:
-        AB_matches_vision_and_language_feats_path_final = AB_matches_vision_and_language_feats_path.replace(".csv", "_debug.csv")
     df_with_feats = read_and_json_loads(AB_matches_vision_and_language_feats_path_final)
     initial_df = read_and_json_loads(AB_matches_filtered_visual)
     AB_matches_objects_no_bbox_feats_path_final = AB_matches_objects_no_bbox_feats_path
-    if SAMPLE:
-        AB_matches_objects_no_bbox_feats_path_final = AB_matches_objects_no_bbox_feats_path.replace(".csv","_debug.csv")
     df_without_feats = read_and_json_loads(AB_matches_objects_no_bbox_feats_path_final)
     return df_with_feats, df_without_feats, initial_df
 
@@ -180,10 +151,6 @@ def print_stats(all_items_to_filter, all_items_to_keep, idx):
     stats_df = pd.DataFrame([filter_bbox_percentages, filter_full_img_percentages], index=['bbox', 'full img'])
     print(f'filter stats filter: {total_filter}, stayed: {len(all_items_to_keep)}')
     print(stats_df)
-    # print(f'bbox ({sum_filter_bbox}), which is {round(sum_filter_bbox / total_filter * 100, 1)}% of total filter')
-    # print(filter_bbox)
-    # print(f'full image ({sum_filter_full_img})')
-    # print(filter_full_img)
 
 
 def classify_given_feats(r, pairs_filter, feats_type):
@@ -221,45 +188,6 @@ def maximal_wrong_prob(prob_A_class_AB, prob_B_class_AB):
 
 def opposite_prob(prob_A_class_AB, prob_B_class_AB):
     return prob_B_class_AB[0] >= 0.66 or prob_A_class_AB[1] >= 0.66
-
-
-'''
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 0,100000
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 100000,200000
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 200000,300000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 300000,400000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 400000,500000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 500000,600000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 600000,700000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 700000,800000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 800000,900000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 900000,1000000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 1000000,1100000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 1100000,1200000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 1200000,1300000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 1300000,1400000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 1400000,1500000
-CUDA_VISIBLE_DEVICES=2 python src_dataset_generation/D_extract_clip_features.py --indices 1500000,1650000
-
-
-CUDA_VISIBLE_DEVICES=2 python src_dataset_generation/D_extract_clip_features.py --indices 0,20
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 0,50000
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 50000,100000
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/D_extract_clip_features.py --indices 100000,150000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 150000,200000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 200000,250000
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/D_extract_clip_features.py --indices 300000,350000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 250000,300000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 350000,400000
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/D_extract_clip_features.py --indices 400000,450000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 450000,500000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 500000,550000
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/D_extract_clip_features.py --indices 550000,600000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 600000,650000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 650000,700000
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/D_extract_clip_features.py --indices 700000,750000
-CUDA_VISIBLE_DEVICES=2 python src_dataset_generation/D_extract_clip_features.py --indices 750000,850000
-'''
 
 if __name__ == '__main__':
     print('Important: If you ran with --indices, run "merge_train_clip_VL_feats_for_AB_filter.py" later')

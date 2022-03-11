@@ -32,7 +32,6 @@ def get_args():
     parser.add_argument('--model_backend_type', default='vit', help="vit", required=False)
     parser.add_argument("--test_model", action='store_const', default=False, const=True)
     parser.add_argument('--load_epoch', default='BEST')
-    parser.add_argument("--cheap_model", action='store_const', default=False, const=True)
 
     args = parser.parse_args()
 

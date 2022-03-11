@@ -4,7 +4,7 @@ import pickle
 import pandas as pd
 from tqdm import tqdm
 
-from dataset.config import AB_matches_filtered_path, columns_to_serialize, AB_matches_dict
+from utils.utils import AB_matches_filtered_path, columns_to_serialize, AB_matches_dict
 
 
 def main():

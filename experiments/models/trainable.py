@@ -21,29 +21,17 @@ class BaselineModel(nn.Module):
         pair_embed_dim = linear_layer_images * embed_dim
         self.model_description = args.model_description
 
-        if not args.cheap_model:
-            self.pairs_layer = nn.Sequential(
-                nn.LayerNorm(pair_embed_dim),
-                nn.Linear(pair_embed_dim, pair_embed_dim),
-                nn.ReLU(),
-            )
-            self.classifier = nn.Sequential(
-                nn.Linear(NUM_CANDIDATE * pair_embed_dim, 384),
-                nn.ReLU(),
-                nn.Linear(384, NUM_CANDIDATE)
-            )
-        else:
-            print(f'BUILDING CHEAP BACKEND')
-            self.pairs_layer = nn.Sequential(
-                nn.LayerNorm(pair_embed_dim),
-                nn.Linear(pair_embed_dim, int(pair_embed_dim / 8)),
-                nn.ReLU(),
-            )
-            self.classifier = nn.Sequential(
-                nn.Linear(NUM_CANDIDATE * int(pair_embed_dim / 8), int(384 / 2)),
-                nn.ReLU(),
-                nn.Linear(int(384 / 2), NUM_CANDIDATE)
-            )
+        self.pairs_layer = nn.Sequential(
+            nn.LayerNorm(pair_embed_dim),
+            nn.Linear(pair_embed_dim, pair_embed_dim),
+            nn.ReLU(),
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(NUM_CANDIDATE * pair_embed_dim, 384),
+            nn.ReLU(),
+            nn.Linear(384, NUM_CANDIDATE)
+        )
+
 
     def forward(self, input_images, candidates):
         input_images_embedding, candidates_features = self.extract_input_features(input_images, candidates)

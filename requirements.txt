@@ -1,0 +1,12 @@
+# Model Baselines
+torch
+git+https://github.com/openai/CLIP.git
+tqdm
+timm
+
+# Dataset Creation
+matplotlib==3.4
+pandas
+opencv-python
+nltk
+tqdm
