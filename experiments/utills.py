@@ -5,7 +5,7 @@ import numpy as np
 import os
 import pandas as pd
 import pickle
-from config import TRAIN, TEST, DEV, SPLIT_PATH, GOLD_PATH_DIR
+from config import TRAIN, TEST, DEV, SPLIT_PATH
 
 
 # ------------------------------Code--------------------------------
@@ -52,7 +52,7 @@ def dump_test_info(args, model_dir_path, all_losses, all_test_accuracy, test_df,
     print(f'Dumping df {len(test_info)} to {out_p}, and {len(test_df)} to {out_p_test_df}')
 
 
-def dump_train_info(args, model_dir_path, all_losses, all_dev_accuracy, epoch):
+def dump_train_info(model_dir_path, all_losses, all_dev_accuracy, epoch):
     train_losses_mean = {i: np.mean(v) for i, v in enumerate(all_losses['train'])}
     dev_losses_mean = {i: np.mean(v) for i, v in enumerate(all_losses['dev'])}
     dev_accuracy_mean = {i: np.mean(v) for i, v in enumerate(all_dev_accuracy)}
@@ -60,8 +60,7 @@ def dump_train_info(args, model_dir_path, all_losses, all_dev_accuracy, epoch):
         [pd.Series(train_losses_mean, name='train loss'), pd.Series(dev_losses_mean, name='dev loss'),
          pd.Series(dev_accuracy_mean, name='dev accuracy')], axis=1)
     out_p = os.path.join(model_dir_path, f'epoch_{epoch}')
-    if args.result_suffix != '':
-        out_p += "_" + args.result_suffix
+
     all_losses_out_p = out_p + '_all_losses.pickle'
     out_p += ".csv"
     train_info.to_csv(out_p)
@@ -83,10 +82,7 @@ def dump_train_info(args, model_dir_path, all_losses, all_dev_accuracy, epoch):
 def get_split(args):
     split = {}
 
-    if args.few_shot_experiments and split == 'difficult':
-        dir_path = GOLD_PATH_DIR
-    else:
-        dir_path = os.path.join(SPLIT_PATH, f'split_{args.split}')
+    dir_path = os.path.join(SPLIT_PATH, f'split_{args.split}')
 
     print(f"dir_path: {dir_path}")
     files = [f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f))]

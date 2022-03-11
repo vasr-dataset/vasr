@@ -32,7 +32,6 @@ def get_args():
     parser.add_argument('--model_backend_type', default='vit', help="vit", required=False)
     parser.add_argument("--test_model", action='store_const', default=False, const=True)
     parser.add_argument('--load_epoch', default='BEST')
-    parser.add_argument("--few_shot_experiments", action='store_const', help='few-shot experiments', default=False, const=True)
     parser.add_argument("--cheap_model", action='store_const', default=False, const=True)
 
     args = parser.parse_args()
@@ -74,9 +73,6 @@ def get_experiment_dir(args):
 
     model_dir_path = os.path.join(TRAIN_RESULTS_PATH,
                                   f"model_{args.model_description}_backend_{args.model_backend_type}_{args.backend_version.replace('/', '-')}_{args.split}")
-
-    if args.few_shot_experiments:
-        model_dir_path += f"_few_shot_{args.few_shot_items}_items"
 
     if not os.path.exists(model_dir_path):
         os.mkdir(model_dir_path)
@@ -155,7 +151,7 @@ def train_loop(args, model, optimizer, train_loader, dev_loader, loss_fn, n_epoc
         all_losses[DEV].append(epoch_dev_losses)
         all_dev_accuracy.append(epoch_dev_accuracy)
 
-        dev_accuracy_list = dump_train_info(args, model_dir_path, all_losses, all_dev_accuracy, epoch=epoch)
+        dev_accuracy_list = dump_train_info(model_dir_path, all_losses, all_dev_accuracy, epoch=epoch)
         save_model(model_dir_path, epoch, model, dev_accuracy_list)
 
 
@@ -210,9 +206,8 @@ def train_epoch(loss_fn, model, optimizer, train_loader, epoch):
         for batch_idx, batch_data in epochs:
             # Forward pass
             input_img, options, label = batch_data
-            out = model(input_img, options).squeeze()
-
-            y = label.squeeze()
+            out = model(input_img, options).squeeze(axis=-1)
+            y = label.squeeze(axis=-1)
             optimizer.zero_grad()
 
             # Compute Loss
@@ -251,9 +246,9 @@ def test_epoch(loss_fn, model, dev_loader, epoch):
     for batch_idx, batch_data in tqdm(enumerate(dev_loader), total=len(dev_loader), desc=f'Testing epoch {epoch}...'):
         with torch.no_grad():
             input_img, options, label = batch_data
-            out = model(input_img, options).squeeze()
+            out = model(input_img, options).squeeze(axis=-1)
 
-        y = label.squeeze()
+        y = label.squeeze(axis=-1)
         loss = loss_fn(out, y)
         accuracy, predictions, labels = calculate_accuracy(out, y)
         epoch_dev_losses.append(loss.item())
