@@ -28,7 +28,8 @@ See [our paper](https://www.google.co.il/) for details, and the [dataset webpage
 
 ## Pipeline 
 #### 1. `A_find_AB_pairs.py`
-Finding images A:A' that are annotated the same, except of a single different role (Section 3.1 in the paper: Finding Analogous Situations in imSitu).
+Finding images A:A' that are annotated the same, except of a single different role (Section 3.1 in the paper: Finding Analogous Situations in imSitu).  
+
 Run example:
 `python dataset/pipeline/A_find_AB_pairs.py`
 

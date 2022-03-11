@@ -5,7 +5,12 @@ To create the dataset, enter the [dataset](dataset) directory.
 To run model experiments, enter the [experiments](experiments) directory.
 
 ## Setup
-virtualenv venv
+```
+virtualenv venv --python=python3.7  
+source venv/bin/activate
+pip install -r requirements.txt
+export PYTHONPATH=$(pwd)/dataset:$(pwd)/experiments
+```
 
 ## Abstract
 A core process in human cognition is analogical mapping:
@@ -22,11 +27,3 @@ periment with several baseline models and find that while some do well
 when answer distractors are chosen randomly (∼86%), all struggle with
 carefully selected distractors (∼53%). We hope our dataset will drive the
 development of models with better analogy-making abilities
-
-## Setup   
-```
-virtualenv venv --python=python3.7  
-source venv/bin/activate
-pip install -r requirements.txt
-export PYTHONPATH=$(pwd)/dataset:$(pwd)/experiments
-```
