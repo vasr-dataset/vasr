@@ -16,17 +16,8 @@ wget XYZ data/vasr_dataset
 ```commandline
 mkdir data/model_results
 ```
-
-## Zero-Shot
-To evaluate arithmetic zero-shot on the random distractors run:
-```
-python run_zero_shot.py --model vit --split random  
-```
-To evaluate arithmetic zero-shot on the difficult distractors run:
-```
-python run_zero_shot.py --model vit --split difficult  
-```
-It's possible to run  the above examples with the following models:
+##Run Models
+It's possible to run the following examples with several models:
 
 ```python
 {
@@ -48,12 +39,43 @@ It's possible to run  the above examples with the following models:
 }
 
 ```
-For exmaple, to use Swin Transformer on the random distractors run:
+
+### Zero-Shot
+To evaluate arithmetic zero-shot on the random distractors run:
+```commandline
+python run_zero_shot.py --model vit --split random  
 ```
+To evaluate arithmetic zero-shot on the difficult distractors run:
+```commandline
+python run_zero_shot.py --model vit --split difficult  
+```
+
+For example, to use Swin Transformer on the random distractors run:
+```commandline
 python run_zero_shot.py --model swin --split random  
 
 ```
 
-## Trainable
+### Trainable
+#### To train the supervised arithmetic model :
+- on the random distractors run:
 
+```commandline
+python run_trainable.py --model_desc supervised_arithmetic --model_backend_type vit --split random
+```
+- on the difficult distractors run:
+```commandline
+python run_trainable.py --model_desc supervised_arithmetic --model_backend_type vit --split difficult
+```
+
+#### To train the supervised concat model :
+- on the random distractors run:
+
+```commandline
+python run_trainable.py --model_desc supervised_concat --model_backend_type vit --split random
+```
+- on the difficult distractors run:
+```commandline
+python run_trainable.py --model_desc supervised_concat --model_backend_type vit --split difficult
+```
 
