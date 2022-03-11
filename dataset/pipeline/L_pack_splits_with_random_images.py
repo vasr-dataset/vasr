@@ -5,8 +5,7 @@ import random
 import pandas as pd
 from tqdm import tqdm
 
-from dataset.config import NUM_CANDIDATES, imsitu_path, SPLIT, split_to_files, data_path, BAD_IMAGES
-
+from utils.utils import NUM_CANDIDATES, imsitu_path, SPLIT, split_to_files, data_path, BAD_IMAGES
 
 def main(split_file_name):
     data_split = json.load(open(os.path.join(imsitu_path, f"{SPLIT}.json")))

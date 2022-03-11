@@ -15,13 +15,6 @@ from dataset.utils.visualization import visualize_analogy_and_distractors, plot_
 from utils.utils import imsitu_path, SPLIT, split_to_files, data_path, \
     distractors_cache_by_keys_path, get_dict_sim, BAD_IMAGES, columns_to_serialize
 
-counter_found_match = {'try': 0, 'success_all': 0, 'fails': 0}
-verbs_matchs = {'didnt_find': 0, 'tries': 0, 'succeeded': 0}
-cand_sim_with_input_lst = []
-iteration_lists_len = {'single': [], 'tuple': [], 'chosen': []}
-choose_tuple = {'true': 0, 'false': 0}
-distractors_stats = {'available': 0, 'solveable': 0}
-clash_with_d_counter = {'true': 0, 'false': 0}
 cases_with_pos_sim = 0
 cases_with_filtered_solution = 0
 distractor_solver_clashes_d = 0
@@ -81,22 +74,13 @@ def init_analogies(split_file_name):
     all_C_distractors_data = []
     plot = False
     modolu = 1000 if SPLIT != 'train' else 10000
-    # modolu = 100 if SPLIT != 'train' else 10000
     return all_ABCD_matches_df, all_B_distractors_data, all_C_distractors_data, data_split, distractors_cache_by_keys, modolu, plot
 
 
 def print_stats(all_B_distractors_data, all_C_distractors_data, r_idx, split_file_name):
     print(r_idx)
-    print(counter_found_match)
     if r_idx > 1:
         print(f"split_file_name: {split_file_name}")
-        print(
-            f"cand_sim_with_input_lst: # items {len(cand_sim_with_input_lst)}, mean: {np.mean(cand_sim_with_input_lst)}")
-        iteration_lists_len_summary = {k: np.mean(v) for k, v in iteration_lists_len.items()}
-        print(f"iteration_lists_len_summary: {iteration_lists_len_summary}")
-        print(
-            f"cases_with_pos_sim: {cases_with_pos_sim}, cases_with_filtered_solution: {cases_with_filtered_solution}, clash_with_d_counter: {clash_with_d_counter}, distractor_solver_clashes_d: {distractor_solver_clashes_d}")
-
         B_stats = get_stat_for_dist_data(all_B_distractors_data)
         C_stats = get_stat_for_dist_data(all_C_distractors_data)
         sim_stats = {'B': B_stats,
@@ -159,15 +143,11 @@ def get_analogies_name(split_file_name):
 def get_distractor_images(r, data_split, distractors_cache_by_keys):
     """ Improvements: verbs with similar meaning, images with same number of keys / same keys """
     r_images = {r['A_img'], r['B_img'], r['C_img'], r['D_img']}
-    global counter_found_match
-    counter_found_match['try'] += 1
     sim_to_B_lst, success_B = get_pair_for_X(r['B_annotations'], r['B_verb'], r['B_img'], r_images, r, data_split, distractors_cache_by_keys, can_be_similar_to_sol=False)
     for item in sim_to_B_lst:
         if 'img_name' in item:
             r_images = r_images.union(item)
     sim_to_C_lst, success_C = get_pair_for_X(r['C_annotations'], r['C_verb'], r['C_img'], r_images, r, data_split, distractors_cache_by_keys, can_be_similar_to_sol=True)
-    if success_B and success_C:
-        counter_found_match['success_all'] += 1
     if success_B and success_C:
         B_distractors_solveable = get_solveable_distractors(data_split, sim_to_B_lst, r)
         C_distractors_solveable = get_solveable_distractors(data_split, sim_to_C_lst, r)
@@ -175,7 +155,6 @@ def get_distractor_images(r, data_split, distractors_cache_by_keys):
         r['C_distractors'] = C_distractors_solveable
         return B_distractors_solveable, C_distractors_solveable
     else:
-        counter_found_match['fails'] += 1
         return None, None
 
 
@@ -188,9 +167,6 @@ def get_solveable_distractors(data_split, distractors_data, r):
         assert len(shared_items) != len(d_annotations)
     distractors_solveable = [x for x in distractors_data if
                              solve_analogy_all_frames_given_distractor(r, data_split, x['img_name'])]
-    global distractors_stats
-    distractors_stats['available'] += len(distractors_data)
-    distractors_stats['solveable'] += len(distractors_solveable)
     return distractors_solveable
 
 
@@ -206,10 +182,6 @@ def get_pair_for_X(annotations, verb, img, r_images, r, data_split, distractors_
                                                             distractors_cache_by_keys,
                                                             r_images, verb)
 
-    if got_tuple:
-        iteration_lists_len['chosen'].append(len(items_tuples))
-    else:
-        iteration_lists_len['chosen'].append(len(items_singles))
     max_sim = 0
     relevant_candidates_dict = {}
     if got_tuple:
@@ -252,11 +224,8 @@ def get_data_based_on_cand_list(ann_diff_key, annotations, can_be_similar_to_sol
         clash_with_d, cand_sim_with_input, cand_sim_with_solution = is_cand_clashes_with_D(annotations_cpy, can_be_similar_to_sol,
                                                                              cand_frame_cpy, diff_key, frames_D,
                                                                              got_tuple, verb_D)
-        global clash_with_d_counter
         if clash_with_d:
-            clash_with_d_counter['true'] += 1
             continue
-        clash_with_d_counter['false'] += 1
         # if len(relevant_candidates_dict) < MAX_NUM_CANDIDATES or cand_sim_with_input > max_sim:
         if cand_sim_with_input >= max_sim:
             max_sim = cand_sim_with_input
@@ -269,8 +238,6 @@ def get_data_based_on_cand_list(ann_diff_key, annotations, can_be_similar_to_sol
                     relevant_candidates_dict[cand_frame_cpy['img_name']] = cand_frame_cpy
             else:
                 relevant_candidates_dict[cand_frame_cpy['img_name']] = cand_frame_cpy
-        # if got_tuple is False and len(relevant_candidates_dict) >= MAX_NUM_CANDIDATES:
-        #     break
     relevant_candidates_dict_list = list(relevant_candidates_dict.values())
     relevant_candidates_sorted = sorted(relevant_candidates_dict_list, key=lambda x: x['cand_sim_with_input'],
                                         reverse=True)
@@ -279,10 +246,6 @@ def get_data_based_on_cand_list(ann_diff_key, annotations, can_be_similar_to_sol
         sim_to_X_lst = relevant_candidates_sorted[:MAX_NUM_CANDIDATES]
         if len(set([x['img_name'] for x in sim_to_X_lst])) < len(sim_to_X_lst):
             raise Exception(f"ERROR")
-        global cand_sim_with_input_lst
-        cand_sim_with_input_lst += [x['cand_sim_with_input'] for x in sim_to_X_lst]
-        if debug_plot_candidates:
-            plot_distractors(img, annotations, verb, diff_key, sim_to_X_lst)
     else:
         sim_to_X_lst = []
     return sim_to_X_lst, success_X
@@ -309,8 +272,6 @@ def is_cand_clashes_with_D(annotations_cpy, can_be_similar_to_sol, cand_frame_cp
                 # print(f"is single, cand_sim_with_input: {cand_sim_with_input}")
                 print(cand_frame_cpy)
                 print(annotations_cpy)
-                global cases_with_pos_sim
-                cases_with_pos_sim += 1
                 # raise Exception
                 # return None, None, False
                 clash_with_d = True
@@ -320,8 +281,6 @@ def is_cand_clashes_with_D(annotations_cpy, can_be_similar_to_sol, cand_frame_cp
             # continue
             clash_with_d = True
         elif can_be_similar_to_sol is True and cand_sim_with_solution == 1:
-            global cases_with_filtered_solution
-            cases_with_filtered_solution += 1
             # continue
             clash_with_d = True
     return clash_with_d, cand_sim_with_input, cand_sim_with_solution
@@ -355,19 +314,10 @@ def get_items_by_tuples_heuristic(ann_diff_key, annotations, diff_key, distracto
                 key_pair_key = key_pair_key_option_2
                 key_pair_val = key_pair_val_op2
             items_with_existing_tup = distractors_cache_by_keys[key_pair_key][key_pair_val]
-            if len(items_with_existing_tup) > 0:
-                concat_items_with_existing_tup_tuples += items_with_existing_tup
             # print(f"Tuples, {len(items_with_existing_tup)}")
-    global iteration_lists_len
-    iteration_lists_len['single'].append(len(items_with_existing_tup_singles))
-    iteration_lists_len['tuple'].append(len(concat_items_with_existing_tup_tuples))
-    global choose_tuple
     concat_items_with_existing_tup_tuples_not_intersected = [x for x in concat_items_with_existing_tup_tuples if x['img_name'] not in r_images]
     if len(concat_items_with_existing_tup_tuples_not_intersected) >= 1:
-        choose_tuple['true'] += 1
         got_tuple = True
-    else:
-        choose_tuple['false'] += 1
     return items_with_existing_tup_singles, concat_items_with_existing_tup_tuples_not_intersected, got_tuple
 
 
@@ -377,5 +327,3 @@ if __name__ == '__main__':
         main(split_file_name)
 
     print("Done")
-    # global didnt_find_verb
-    print(counter_found_match)

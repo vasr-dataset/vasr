@@ -2,7 +2,6 @@ import argparse
 import json
 import os
 import traceback
-os.environ['CUDA_VISIBLE_DEVICES'] = '6'
 
 import torch
 import clip
@@ -12,7 +11,8 @@ from PIL import Image
 from scipy.special import softmax
 from tqdm import tqdm
 
-from dataset.config import imsitu_path, SPLIT, split_to_files, data_path, swig_images_path, columns_to_serialize, \
+from config import swig_images_path
+from utils.utils import imsitu_path, SPLIT, split_to_files, data_path, columns_to_serialize, \
     swig_path
 
 imsitu_space_path = os.path.join(imsitu_path, f'imsitu_space.json')
@@ -171,25 +171,6 @@ def get_dist_clip_feats_for_lst(clip_feature_extractor, dist_data_lst, sol_data)
 
 def get_analogies_name(split_file_name):
     return split_file_name.replace('all_ABCD_matches_rule_based_sampled', 'analogies').replace(".csv", '_distractors_before_clip_filter.csv')
-"""
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 0 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 1 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=7 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 2 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 3 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 4 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=6 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 5 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 6 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 7 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=5 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 8 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 9 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 10 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 11 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=4 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 12 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 13 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 14 --workers_cnt 16
-CUDA_VISIBLE_DEVICES=3 python src_dataset_generation/J_extract_clip_features_for_distractors.py --worker_idx 15 --workers_cnt 16
-
-"""
 
 if __name__ == '__main__':
     print('Important: If you ran with --indices, run "merge_train_clip_VL_feats_for_distractors_filter.py" later')

@@ -5,8 +5,7 @@ import random
 import pandas as pd
 from tqdm import tqdm
 
-from dataset.config import data_path, SPLIT, split_to_files, columns_to_serialize, FINAL_COLS_TRAIN
-from dataset.utils.visualization import visualize_analogy_and_distractors
+from utils.utils import data_path, SPLIT, split_to_files, columns_to_serialize, FINAL_COLS_TRAIN
 
 total_items_received = 0
 total_items_after_filtering = 0
@@ -30,15 +29,6 @@ def main(split_file_name):
     for r_idx, r in tqdm(df.iterrows(), total=len(df), desc='Classifying...'):
         B_distractors_clip_filtered, B_bad_distractors = get_top_images_after_clip_filter(r['B_distractors_data'])
         C_distractors_clip_filtered, C_bad_distractors = get_top_images_after_clip_filter(r['C_distractors_data'])
-
-        bad_distractors = B_bad_distractors + C_bad_distractors
-        if visualize_bad_distractors and len(bad_distractors) > 0:
-            if len(bad_distractors) > 3:
-                bad_distractors_sample = random.sample(bad_distractors, 3)
-            else:
-                bad_distractors_sample = bad_distractors
-            r['distractors'] = [x['img_name'] for x in bad_distractors_sample]
-            visualize_analogy_and_distractors(r, show_analogy_type=True, show_analogy_answer=True)
 
         merged_distractors_data = B_distractors_clip_filtered + C_distractors_clip_filtered
         if len(merged_distractors_data) == 3:

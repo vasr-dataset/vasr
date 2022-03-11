@@ -172,7 +172,8 @@ def create_silver_and_gold_splits(testdev_df, train_df_silver):
     train_silver_vc.name = 'Train'
     dev_silver_vc = dev_df_silver['different_key'].value_counts()
     dev_silver_vc.name = 'Dev'
-    silver = pd.DataFrame(pd.concat([train_silver_vc, dev_silver_vc, test_gold_vc],axis=1))
+    silver_stats = pd.DataFrame(pd.concat([train_silver_vc, dev_silver_vc, test_gold_vc],axis=1))
+    print(silver_stats)
 
     train_gold_vc = train_df_gold_before_annotation[train_df_gold_before_annotation['different_key'].isin(relevant_test_keys)]['different_key'].value_counts()
     train_gold_vc.name = 'Train'
@@ -193,7 +194,6 @@ def build_train(NOISE_LEVEL, dev_df_silver, test_df_percentages, train_df_ood_go
         if len(train_df_silver_diff_key) > diff_key_items_to_sample:
             train_df_silver_diff_key = train_df_silver_diff_key.sample(diff_key_items_to_sample)
         train_df_items.append(train_df_silver_diff_key)
-    train_df_gold = pd.concat(train_df_items)
     desired_train_gold_size_after_annotation = 1000
     required_train_silver_annotation = int(desired_train_gold_size_after_annotation / (1 - NOISE_LEVEL))
     train_df_gold_before_annotation = train_df_silver.sample(required_train_silver_annotation)
@@ -205,20 +205,13 @@ def build_dev(NOISE_LEVEL, desired_dev_gold_size_after_annotation, test_df, test
         [item for sublist in test_df[['A_img', 'B_img', 'C_img', 'D_img']].values for item in sublist])
     dev_df_no_test_images = testdev_df[testdev_df.apply(
         lambda r: all(x not in all_test_images for x in [r['A_img'], r['B_img'], r['C_img'], r['D_img']]), axis=1)]
-    all_test_pairs = set([tuple(x) for x in test_df[['diff_item_A', 'diff_item_B']].values])
-    dev_df_ood_all = dev_df_no_test_images[
-        dev_df_no_test_images.apply(lambda r: pair_not_in_test(r, all_test_pairs), axis=1)]
     test_df_percentages = test_df['different_key'].value_counts().apply(lambda x: x / len(test_df))
-    dev_df_items_to_sample = test_df_percentages.apply(lambda x: int(x * desired_dev_gold_size_after_annotation) + 1)
-    dev_df_items = []
-    for diff_key, diff_key_items_to_sample in dev_df_items_to_sample.items():
-        dev_df_ood_all_diff_key = dev_df_ood_all[dev_df_ood_all['different_key'] == diff_key]
-        if len(dev_df_ood_all_diff_key) > diff_key_items_to_sample:
-            dev_df_ood_all_diff_key = dev_df_ood_all_diff_key.sample(diff_key_items_to_sample)
-        dev_df_items.append(dev_df_ood_all_diff_key)
-    dev_df_silver = pd.concat(dev_df_items)
     required_dev_silver_annotation = int(desired_dev_gold_size_after_annotation / (1 - NOISE_LEVEL))
-    dev_df_gold_before_annotation = dev_df_silver.sample(required_dev_silver_annotation)
+    dev_df_silver = dev_df_no_test_images
+    if required_dev_silver_annotation < len(dev_df_no_test_images):
+        dev_df_gold_before_annotation = dev_df_no_test_images.sample(required_dev_silver_annotation)
+    else:
+        dev_df_gold_before_annotation = dev_df_no_test_images
     return dev_df_gold_before_annotation, dev_df_silver, test_df_percentages
 
 

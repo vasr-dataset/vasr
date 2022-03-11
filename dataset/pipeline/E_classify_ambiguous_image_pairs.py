@@ -86,8 +86,7 @@ def dump_outputs(all_items_to_filter, all_items_to_keep, df_objects_no_bbox_feat
     all_items_to_filter_df.to_csv(AB_matches_vision_and_language_feats_to_filter)
     all_items_to_keep_df = pd.DataFrame(all_items_to_keep)
     all_items_to_keep_df.to_csv(AB_matches_vision_and_language_feats_to_keep)
-    AB_matches_filtered_path_final = AB_matches_filtered_path if SAMPLE == False else AB_matches_filtered_path.replace(
-        ".csv", "_debug.csv")
+    AB_matches_filtered_path_final = AB_matches_filtered_path
     print(
         f"In addition, {len(df_objects_no_bbox_feats)} dont have feats. Merging with the items to keep: {len(all_items_to_keep_df)}\n"
         f"and writing to the final path: {AB_matches_filtered_path_final}")

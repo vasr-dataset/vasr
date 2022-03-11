@@ -10,3 +10,4 @@ pandas
 opencv-python
 nltk
 tqdm
+scipy
