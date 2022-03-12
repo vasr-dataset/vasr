@@ -5,12 +5,19 @@ To create the dataset, enter the [dataset](dataset) directory.
 To run model experiments, enter the [experiments](experiments) directory.
 
 ## Setup
-```
-virtualenv venv --python=python3.7  
-source venv/bin/activate
-pip install -r requirements.txt
-export PYTHONPATH=$(pwd)/dataset:$(pwd)/experiments
-```
+- Run installation script downloads resized images and creates output dir:
+    ```shell
+    ./install.sh 
+    ```
+    You can also download the original size images from http://imsitu.org/download/ (34G)
+- Run:
+    ```
+    virtualenv venv --python=python3.7  
+    source venv/bin/activate
+    pip install -r requirements.txt
+    export PYTHONPATH=$(pwd)/dataset:$(pwd)/experiments
+    ```
+
 
 ## Abstract
 A core process in human cognition is analogical mapping:
