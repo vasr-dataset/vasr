@@ -1,11 +1,5 @@
 # Usage
 
-```commandline
-wget XYZ data/vasr_dataset
-```
-
-```
-## Run Models
 It's possible to run the following examples with several models:
 
 ```python
