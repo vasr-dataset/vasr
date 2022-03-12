@@ -9,8 +9,8 @@ from timm.data import resolve_data_config, create_transform
 from tqdm import tqdm
 import argparse
 from collections import defaultdict
-from experiments.config import ZEROSHOT_RESULTS_PATH, TEST_GOLD_PATH, TEST_RANDOM_PATH, MODELS_MAP
-from experiments.models.zero_shot import ZeroShot
+from config import ZEROSHOT_RESULTS_PATH, TEST_GOLD_PATH, TEST_RANDOM_PATH, MODELS_MAP
+from models.zero_shot import ZeroShot
 
 # ------------------------------Constants--------------------------------
 

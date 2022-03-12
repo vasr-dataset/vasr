@@ -39,15 +39,15 @@ MODELS_MAP = {
 
 # ------------------------------Paths--------------------------------
 
-IMSITU_PATH = '/Users/eliyahustrugo/PycharmProjects/image_analogies/imsitu_data'
-IMAGES_PATH = '/Users/eliyahustrugo/PycharmProjects/image_analogies/imsitu_data/images_512'
+IMAGES_PATH = 'images'
 SOURCE = '/Users/eliyahustrugo/PycharmProjects/vasr/experiments'
 
 SPLIT_PATH = os.path.join(SOURCE, 'date_split')
+
 TEST_RANDOM_PATH = os.path.join(SPLIT_PATH, 'split_random', 'test_random.csv')
 TEST_GOLD_PATH = os.path.join(SPLIT_PATH, 'gold_standard', 'test_gold.csv')
 
 # ------------------------------Paths to Results--------------------------------
 
-ZEROSHOT_RESULTS_PATH = 'model_results/zero_shot'
-TRAIN_RESULTS_PATH = 'model_results/train'
+ZEROSHOT_RESULTS_PATH = 'data/model_results/zero_shot'
+TRAIN_RESULTS_PATH = 'data/model_results/train'

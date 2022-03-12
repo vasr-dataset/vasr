@@ -37,8 +37,6 @@ def dump_test_info(args, model_dir_path, all_losses, all_test_accuracy, test_df,
     test_info = pd.concat(
         [pd.Series(test_losses_mean, name='test loss'), pd.Series(test_accuracy_mean, name='test accuracy')], axis=1)
     out_p = os.path.join(model_dir_path, f'epoch_{epoch}_test')
-    if args.result_suffix != '':
-        out_p += "_" + args.result_suffix
     all_losses_out_p = out_p + '_all_losses_test.pickle'
     out_p_test_df = out_p + "_test_df.csv"
     out_p += ".csv"

@@ -4,7 +4,7 @@ import os.path
 import torch
 from PIL import Image
 from collections import defaultdict
-from experiments.config import IMAGES_PATH
+from config import IMAGES_PATH
 
 # ------------------------------Constants------------------------------
 
