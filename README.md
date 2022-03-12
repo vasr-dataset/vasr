@@ -5,7 +5,7 @@ To create the dataset, enter the [dataset](dataset) directory.
 To run model experiments, enter the [experiments](experiments) directory.
 
 ## Setup
-- Run installation script downloads resized images and creates output dir:
+- Run installation script that downloads the resized images and creates output dir:
     ```shell
     ./install.sh 
     ```
