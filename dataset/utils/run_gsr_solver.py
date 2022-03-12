@@ -16,7 +16,6 @@ def solve_analogy(r, data_split):
     r['B_annotations']['verb'] = r['B_verb']
     shared_key_but_not_val = {k: r['B_annotations'][k] for k in r['B_annotations'] if k in r['A_annotations'] and r['B_annotations'][k] != r['A_annotations'][k]}
     assert len(shared_key_but_not_val) == 1
-    # That's the "different key" instances from A -> B.
 
     shared_key_but_not_val_key = list(shared_key_but_not_val.keys())[0]
     shared_key_but_not_val_val = shared_key_but_not_val[shared_key_but_not_val_key]
@@ -25,9 +24,6 @@ def solve_analogy(r, data_split):
 
     dict_to_search = deepcopy(r['C_annotations'])
     dict_to_search[shared_key_but_not_val_key] = shared_key_but_not_val_val
-
-    # candidates = r['distractors'] + [r['D_img']]
-    # random.shuffle(candidates)
 
     found_solution = False
     solution_cand = None
@@ -45,8 +41,6 @@ def solve_analogy(r, data_split):
         if found_solution:
             break
 
-    # if solution_cand and solution_cand == r['D_img']:
-    #     return True
     if not found_solution:
         return True
     print(f"D: {r['D_img']}, sol: {solution_cand}")
@@ -64,18 +58,14 @@ def solve_analogy_all_frames(r, data_split):
             shared_key_but_not_val = {k: B_annotations[k] for k in B_annotations if k in A_annotations and B_annotations[k] != A_annotations[k]}
             if not len(shared_key_but_not_val) == 1:
                 continue
-            # That's the "different key" instances from A -> B.
+
             shared_key_but_not_val_key = list(shared_key_but_not_val.keys())[0]
             shared_key_but_not_val_val = shared_key_but_not_val[shared_key_but_not_val_key]
 
-            # assert shared_key_but_not_val_key == r['different_key']
             for C_annotations in data_split[r['C_img']]['frames']:
                 C_annotations['verb'] = r['C_verb']
                 dict_to_search = deepcopy(C_annotations)
                 dict_to_search[shared_key_but_not_val_key] = shared_key_but_not_val_val
-
-                # candidates = r['distractors'] + [r['D_img']]
-                # random.shuffle(candidates)
 
                 for cand in r['distractors']:
                     cand_data = data_split[cand]
@@ -91,8 +81,6 @@ def solve_analogy_all_frames(r, data_split):
                     if found_solution:
                         break
 
-    # if solution_cand and solution_cand == r['D_img']:
-    #     return True
     if not found_solution:
         return True
     print(f"D: {r['D_img']}, sol: {solution_cand}")
@@ -110,11 +98,10 @@ def solve_analogy_all_frames_given_distractor(r, data_split, distractor):
             shared_key_but_not_val = {k: B_annotations[k] for k in B_annotations if k in A_annotations and B_annotations[k] != A_annotations[k]}
             if not len(shared_key_but_not_val) == 1:
                 continue
-            # That's the "different key" instances from A -> B.
+
             shared_key_but_not_val_key = list(shared_key_but_not_val.keys())[0]
             shared_key_but_not_val_val = shared_key_but_not_val[shared_key_but_not_val_key]
 
-            # assert shared_key_but_not_val_key == r['different_key']
             for C_annotations in data_split[r['C_img']]['frames']:
                 C_annotations['verb'] = r['C_verb']
                 dict_to_search = deepcopy(C_annotations)
@@ -135,7 +122,6 @@ def solve_analogy_all_frames_given_distractor(r, data_split, distractor):
 
     if not found_solution:
         return True
-    # print(f"D: {r['D_img']}, sol: {solution_cand}")
     return False
 
 
@@ -154,7 +140,6 @@ def observe_d_sim(r, data_split):
 if __name__ == '__main__':
 
     analogies = pd.read_csv(path)
-    # analogies = pd.read_csv(bad_preds_file)
     annotations_cols = ['A_annotations', 'A_annotations_str', 'B_annotations', 'B_annotations_str', 'C_annotations', 'C_annotations_str', 'D_annotations', 'D_annotations_str', 'distractors', 'distractors_data']
     for c in annotations_cols:
         print(c)
@@ -166,14 +151,7 @@ if __name__ == '__main__':
     all_max_sims = []
     all_sims_lst = []
     for r_idx, r in tqdm(analogies.iterrows(), desc='solving', total=len(analogies)):
-        # success = solve_analogy(r, data_split)
         success = solve_analogy_all_frames(r, data_split)
         all_res.append(success)
 
-        # all_sims, max_sim = observe_d_sim(r, data_split)
-        # all_max_sims.append(max_sim)
-        # all_sims_lst += all_sims
-
     print(f"Accuracy: # {np.mean(all_res)} items: {len(all_res)}, errors: {len(all_res) - sum(all_res)}")
-    # print(f"all_sims_lst mean: {np.mean(all_sims_lst)}, all_max_sims: {np.mean(all_max_sims)}")
-    #

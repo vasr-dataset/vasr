@@ -161,8 +161,6 @@ def get_dist_clip_feats_for_lst(clip_feature_extractor, dist_data_lst, sol_data)
         distractor_frames = data_split[distractor_data['img_name']]['frames']
         curr_distractor_data = {'img': distractor_data['img_name'], 'frames': distractor_frames,
                            'verb': distractor_data['verb']}
-        # if distractor_data['img_name'] != 'pulling_325.jpg':
-        #     continue
         clip_feats = clip_feature_extractor.calculate_AB_similar_feats(sol_data, curr_distractor_data)
         distractor_data['clip_features'] = clip_feats
         distractors_data_with_clip_feats.append(distractor_data)
@@ -181,10 +179,6 @@ if __name__ == '__main__':
     print(args)
 
     for split_file_name in split_to_files[SPLIT]:
-            # extract to the full file only
-            if SPLIT == 'train' and split_file_name != 'all_ABCD_matches_rule_based_sampled_train_full.csv':
-                continue
             print(f"Extracting CLIP features for {split_file_name}")
             main(args, split_file_name)
-
     print("Done")

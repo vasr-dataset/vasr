@@ -68,7 +68,6 @@ class PairsFilter(object):
                     has_hypernym_wn_synset_inner(wn_x, abstract_class) and \
                     has_hypernym_wn_synset_inner(wn_y, abstract_class) and not \
                     objects_are_type_of_each_other(x_name, y_name) and not (x_name in y_name or y_name in x_name):
-                # print(f'Instances: {xy_words}, {abstract_class_name}')
                 self.filter_counts['A_instances'] += 1
                 return True
         if 'animal' in xy_clusters and not objects_are_type_of_each_other(x_name, y_name):
@@ -129,7 +128,6 @@ class PairsFilter(object):
         x_wns = [x for x in wn.synsets(t_dict['diff_item_A']) if x.pos() == 'v']
         y_wns = [x for x in wn.synsets(t_dict['diff_item_B']) if x.pos() == 'v']
         if len(y_wns) == 0 or len(x_wns) == 0:
-            # print(f"* len 0 * {t_dict['diff_item_A'], t_dict['diff_item_B']}")
             return False
         wn_x = x_wns[0]
         wn_y = y_wns[0]

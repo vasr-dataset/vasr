@@ -1,8 +1,7 @@
 import os
 from copy import deepcopy
 
-from config import imsitu_path, SPLIT, analogies_output_path, swig_path
-
+from dataset_config import imsitu_path, SPLIT, analogies_output_path, swig_path
 
 def get_difference(AB_match_dict, A_data, B_data, str_fmt=False, all_str=False):
     different_key = AB_match_dict['B_data']['different_key']
@@ -83,7 +82,6 @@ all_dev_files = ['all_ABCD_matches_rule_based_sampled_dev.csv']
 all_test_files = ['all_ABCD_matches_rule_based_sampled_test.csv']
 split_to_files = {'train': all_train_files, 'dev': all_dev_files, 'test': all_test_files}
 
-# columns_to_serialize = {'C_annotations', 'A_str', 'keys', 'A_annotations', 'A_annotations_str', 'B_annotations_str', 'D_annotations_str', 'D_annotations', 'vl_feats_bbox', 'C_annotations_str', 'B_bounding_box', 'A_bounding_box', 'B_data', 'diff_item_A_str', 'B_str', 'vl_feats_full_img', 'A_data', 'B_annotations', 'diff_item_B_str', 'distractors', 'distractors_data', 'distractors_data_and_clip_features', 'B_distractors_data', 'C_distractors_data', 'C_bounding_box', 'D_bounding_box'}
 columns_to_serialize = {'C_annotations', 'A_str', 'keys', 'A_annotations', 'A_annotations_str', 'B_annotations_str', 'D_annotations_str', 'D_annotations', 'vl_feats_bbox', 'C_annotations_str', 'B_bounding_box', 'A_bounding_box', 'B_data', 'diff_item_A_str', 'B_str', 'vl_feats_full_img', 'A_data', 'B_annotations', 'diff_item_B_str', 'distractors', 'distractors_data', 'distractors_data_and_clip_features', 'B_distractors_data', 'C_distractors_data',
                         'diff_item_A_str_original', 'diff_item_B_str_original', 'diff_item_C_str_original', 'diff_item_D_str_original',
                         'analogy_difficulty_score', 'vl_feats_bbox_AB', 'vl_feats_full_img_AB', 'vl_feats_bbox_CD', 'vl_feats_full_img_CD'}

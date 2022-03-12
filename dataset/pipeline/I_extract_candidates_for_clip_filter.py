@@ -19,7 +19,7 @@ cases_with_pos_sim = 0
 cases_with_filtered_solution = 0
 distractor_solver_clashes_d = 0
 
-MAX_NUM_CANDIDATES = 10
+MAX_NUM_CANDIDATES = 20 if SPLIT != 'train' else 10
 print(f'MAX_NUM_CANDIDATES: {MAX_NUM_CANDIDATES}')
 
 def main(split_file_name):
@@ -58,8 +58,7 @@ def dump_output(all_ABCD_matches_df, all_B_distractors_data, all_C_distractors_d
 def init_analogies(split_file_name):
     if not os.path.exists(distractors_cache_by_keys_path):
         create_cache()
-    else:
-        distractors_cache_by_keys = pickle.load(open(distractors_cache_by_keys_path, 'rb'))
+    distractors_cache_by_keys = pickle.load(open(distractors_cache_by_keys_path, 'rb'))
     split_file_path = os.path.join(data_path, 'ABCD_matches', split_file_name)
     print(f"Reading {split_file_path}")
     all_ABCD_matches_df = pd.read_csv(split_file_path)
@@ -128,13 +127,11 @@ def create_cache():
                 key1 = key_pair[0]
                 key2 = key_pair[1]
                 key_pair_key = "_".join(key_pair)
-                # if img_frame[key1] is not None and img_frame[key1] != '' and img_frame[key2] is not None and img_frame[key1] != '':
                 key_pair_val = "_".join([img_frame[key1], img_frame[key2]])
                 cache_by_keys[key_pair_key][key_pair_val].append(img_frame)
     cache_by_keys_dict = dict({k:dict(v) for k,v in cache_by_keys.items()})
     pickle.dump(cache_by_keys_dict, open(distractors_cache_by_keys_path, 'wb'))
-    print(f"Created cash. Run again and use it.")
-    exit()
+    print(f"Created cash. Now using it.")
 
 
 def get_analogies_name(split_file_name):
@@ -211,10 +208,8 @@ def get_data_based_on_cand_list(ann_diff_key, annotations, can_be_similar_to_sol
         if cand_data['img_name'] in r_images:
             continue
         if diff_key != 'verb' and (diff_key not in cand_data or ann_diff_key not in cand_data[diff_key]):
-            # raise Exception(f"BUG")
             continue
         elif diff_key == 'verb' and cand_data['verb'] != ann_diff_key:
-            # raise Exception(f"BUG")
             continue
 
         cand_frame_cpy = deepcopy(cand_data)
@@ -226,7 +221,6 @@ def get_data_based_on_cand_list(ann_diff_key, annotations, can_be_similar_to_sol
                                                                              got_tuple, verb_D)
         if clash_with_d:
             continue
-        # if len(relevant_candidates_dict) < MAX_NUM_CANDIDATES or cand_sim_with_input > max_sim:
         if cand_sim_with_input >= max_sim:
             max_sim = cand_sim_with_input
             cand_frame_cpy = deepcopy(cand_data)
@@ -266,14 +260,10 @@ def is_cand_clashes_with_D(annotations_cpy, can_be_similar_to_sol, cand_frame_cp
             del d_annotations_cpy[diff_key]
 
         cand_sim_with_input = get_dict_sim(cand_frame_cpy, annotations_cpy, eliminate_place=True)
-        # if SPLIT == 'train' and got_tuple is False:
         if got_tuple is False:
             if cand_sim_with_input > 0:
-                # print(f"is single, cand_sim_with_input: {cand_sim_with_input}")
                 print(cand_frame_cpy)
                 print(annotations_cpy)
-                # raise Exception
-                # return None, None, False
                 clash_with_d = True
         cand_sim_with_solution = get_dict_sim(cand_frame_cpy, d_annotations_cpy, eliminate_place=True)
 
@@ -314,7 +304,8 @@ def get_items_by_tuples_heuristic(ann_diff_key, annotations, diff_key, distracto
                 key_pair_key = key_pair_key_option_2
                 key_pair_val = key_pair_val_op2
             items_with_existing_tup = distractors_cache_by_keys[key_pair_key][key_pair_val]
-            # print(f"Tuples, {len(items_with_existing_tup)}")
+            if len(items_with_existing_tup) > 0:
+                concat_items_with_existing_tup_tuples += items_with_existing_tup
     concat_items_with_existing_tup_tuples_not_intersected = [x for x in concat_items_with_existing_tup_tuples if x['img_name'] not in r_images]
     if len(concat_items_with_existing_tup_tuples_not_intersected) >= 1:
         got_tuple = True

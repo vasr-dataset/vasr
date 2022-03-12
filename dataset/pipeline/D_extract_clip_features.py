@@ -10,7 +10,7 @@ import pandas as pd
 import torch
 from PIL import Image
 
-from config import swig_images_path
+from dataset_config import swig_images_path
 from utils.utils import SPLIT, AB_matches_filtered_visual, AB_matches_vision_and_language_feats_path, \
     AB_matches_objects_no_bbox_feats_path, \
     columns_to_serialize, swig_path
@@ -228,7 +228,6 @@ def get_ab_txt_data(img_type, r):
 def is_AB_similar_mesh(model, device, img, first_img_synsets_strs, second_img_synsets_strs, txt_data):
     first_img_strs = [x[1] for x in first_img_synsets_strs]
     second_img_strs = [x[1] for x in second_img_synsets_strs]
-    # AB_strs = list(set(first_img_strs) - set(second_img_strs)) + second_img_strs
     AB_strs = first_img_strs + second_img_strs
     AB_strs_sent = list(map(lambda item_class: get_clip_text(item_class, txt_data), AB_strs))
     AB_classes_tokenized = clip.tokenize(AB_strs_sent).to(device)

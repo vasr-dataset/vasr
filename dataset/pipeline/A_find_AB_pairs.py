@@ -7,43 +7,43 @@ from tqdm import tqdm
 
 from utils.utils import AB_matches_path, BAD_IMAGES, get_difference, columns_to_serialize, swig_path, imsitu_path, SPLIT
 
-
 # The split should be train and testdev
 
-def main():
-    data_split, nouns = load_imsitu_data()
+data_split = json.load(open(os.path.join(swig_path, f"{SPLIT}.json")))
+intersecting_keys_counter = 0
 
+def main():
+    imsitu = json.load(open(os.path.join(imsitu_path, "imsitu_space.json")))
+    nouns = imsitu["nouns"]
     all_AB_matches = []
     matches_num_for_single_img = []
     for a_img_idx, A_img in tqdm(enumerate(data_split), total=len(data_split), desc=f'Iterating A'):
-        A_B_matches = get_AB_matches_for_A_img(A_img, nouns, data_split)
+        A_B_matches = get_AB_matches_for_A_img(A_img, nouns)
         matches_num_for_single_img.append(len(A_B_matches))
         all_AB_matches += A_B_matches
         if a_img_idx % 1000 == 0:
-            print(f"total matches: {len(all_AB_matches)}, average matches_num_for_single_img: {round(np.mean(matches_num_for_single_img), 2)}")
-
-    json_dump_and_write_output_csv(all_AB_matches)
-
-    print("Done")
-
-
-def json_dump_and_write_output_csv(all_AB_matches):
+            global intersecting_keys_counter
+            print(f"total matches: {len(all_AB_matches)}, average matches_num_for_single_img: {round(np.mean(matches_num_for_single_img), 2)}, intersecting_keys_counter: {intersecting_keys_counter}")
     all_AB_matches_df = pd.DataFrame(all_AB_matches)
     for c in columns_to_serialize:
         if c in all_AB_matches_df:
             all_AB_matches_df[c] = all_AB_matches_df[c].apply(json.dumps)
+
+    print(f"intersecting_keys_counter: {intersecting_keys_counter}")
     print(f"Dumping total {len(all_AB_matches_df)} AB matches to {AB_matches_path}")
     all_AB_matches_df.to_csv(AB_matches_path, index=False)
 
-
-def load_imsitu_data():
-    imsitu = json.load(open(os.path.join(imsitu_path, "imsitu_space.json")))
-    nouns = imsitu["nouns"]
-    data_split = json.load(open(os.path.join(swig_path, f"{SPLIT}.json")))
-    return data_split, nouns
+    print("Done")
 
 
-def get_AB_matches_for_A_img(A_img, nouns, data_split):
+def count_intersecting_diff_key_AB(A_frames, B_frames, different_key):
+    diff_key_A = [x[different_key] for x in A_frames]
+    diff_key_B = [x[different_key] for x in B_frames]
+    diff_key_AB_intersection = len(set(diff_key_A).intersection(set(diff_key_B)))
+    return diff_key_AB_intersection
+
+
+def get_AB_matches_for_A_img(A_img, nouns):
     all_A_and_B_matches = []
     if A_img in BAD_IMAGES:
         return all_A_and_B_matches
@@ -55,7 +55,7 @@ def get_AB_matches_for_A_img(A_img, nouns, data_split):
             continue
 
         A_data = {"A": A, "A_str": {k:nouns[v]['gloss'] if v in nouns else None for k,v in A.items()},
-         "A_img": A_img, "A_verb": A_verb, 'A_bounding_box': A_bounding_box}
+                  "A_img": A_img, "A_verb": A_verb, 'A_bounding_box': A_bounding_box}
         all_B_matches_data_given_A_img = find_B_for_A(data_split, nouns, A_img, A, A_verb, A_img_df)
         for B_data in all_B_matches_data_given_A_img:
             AB_match_dict = {'A_data': A_data, 'B_data': B_data}
@@ -64,8 +64,8 @@ def get_AB_matches_for_A_img(A_img, nouns, data_split):
                                                                              all_str=True)
             keys = list(A_data['A'].keys())
             AB_match_dict = {**AB_match_dict, 'diff_item_A': diff_item_A, 'diff_item_B': diff_item_B, 'different_key': different_key, 'keys': keys,
-                                      'A_str': A_data['A_str'], 'B_str': B_data['B_str'],
-                                      'diff_item_A_str': diff_item_A_str, 'diff_item_B_str': diff_item_B_str,
+                             'A_str': A_data['A_str'], 'B_str': B_data['B_str'],
+                             'diff_item_A_str': diff_item_A_str, 'diff_item_B_str': diff_item_B_str,
                              'A_img': A_data['A_img'], 'B_img': B_data['B_img'], 'A_verb': A_data['A_verb'], 'B_verb': B_data['B_verb']}
             if AB_match_dict not in all_A_and_B_matches:
                 all_A_and_B_matches.append(AB_match_dict)
@@ -80,11 +80,11 @@ def find_B_for_A(data_split, nouns, A_img, A, A_verb, A_img_df):
             continue
         if A_img == B_img_cand:  # We want different images
             continue
-        all_B_matches_data_for_A_img_given_B_img = search_B_cand_frame(A, A_verb, B_img_cand, data_split, A_img_df, nouns)
+        all_B_matches_data_for_A_img_given_B_img = search_B_cand_frame(A, A_verb, B_img_cand, data_split, A_img_df, nouns, A_img)
         all_B_matches_data_given_A_img += all_B_matches_data_for_A_img_given_B_img
     return all_B_matches_data_given_A_img
 
-def search_B_cand_frame(A, A_verb, B_img_cand, data_split, A_img_df, nouns):
+def search_B_cand_frame(A, A_verb, B_img_cand, data_split, A_img_df, nouns, A_img):
     all_B_matches_data_for_img = []
     B_bounding_box = data_split[B_img_cand]['bb']
     for B_cand in data_split[B_img_cand]['frames']:
@@ -92,7 +92,7 @@ def search_B_cand_frame(A, A_verb, B_img_cand, data_split, A_img_df, nouns):
             continue
         B_cand_verb = data_split[B_img_cand]['verb']
 
-        found_B, key_to_differ = B_is_different_from_A_in_one_key_that_is_not_in_A(A, A_verb, B_cand, B_cand_verb, A_img_df)
+        found_B, key_to_differ = B_is_different_from_A_in_one_key_that_is_not_in_A(A, A_verb, B_cand, B_cand_verb, A_img_df, A_img, B_img_cand)
         if found_B:
             B_data = {'B': B_cand, 'B_verb': B_cand_verb, 'different_key': key_to_differ,
                       'B_str': {k:nouns[v]['gloss'] if v in nouns else None for k,v in B_cand.items()},
@@ -101,7 +101,7 @@ def search_B_cand_frame(A, A_verb, B_img_cand, data_split, A_img_df, nouns):
     return all_B_matches_data_for_img
 
 
-def B_is_different_from_A_in_one_key_that_is_not_in_A(A, A_verb, B_cand, B_cand_verb, A_img_df):
+def B_is_different_from_A_in_one_key_that_is_not_in_A(A, A_verb, B_cand, B_cand_verb, A_img_df, A_img, B_img):
     found_B = False
     key_to_differ = None
     if all([A[k] == B_cand[k] for k in A.keys()]) and A_verb != B_cand_verb:
@@ -114,6 +114,14 @@ def B_is_different_from_A_in_one_key_that_is_not_in_A(A, A_verb, B_cand, B_cand_
                     if B_cand[key_to_differ] not in A_img_df[key_to_differ].values:
                         found_B = True
                         break
+        if found_B:
+            A_frames = data_split[A_img]['frames']
+            B_frames = data_split[B_img]['frames']
+            interesecting_keys = count_intersecting_diff_key_AB(A_frames, B_frames, key_to_differ)
+            if interesecting_keys > 0:
+                global intersecting_keys_counter
+                intersecting_keys_counter += 1
+                found_B = False
     return found_B, key_to_differ
 
 
