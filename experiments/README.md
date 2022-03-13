@@ -39,16 +39,6 @@ python experiments/run_zero_shot.py --model swin --split random
 ```
 
 ### Trainable
-#### To train the supervised arithmetic model :
-- on the random distractors run:
-
-```commandline
-python experiments/run_trainable.py --model_desc supervised_arithmetic --model_backend_type vit --split random
-```
-- on the difficult distractors run:
-```commandline
-python experiments/run_trainable.py --model_desc supervised_arithmetic --model_backend_type vit --split difficult
-```
 
 #### To train the supervised concat model :
 - on the random distractors run:
@@ -61,3 +51,13 @@ python experiments/run_trainable.py --model_desc supervised_concat --model_backe
 python experiments/run_trainable.py --model_desc supervised_concat --model_backend_type vit --split difficult
 ```
 
+#### To train the supervised arithmetic model :
+- on the random distractors run:
+
+```commandline
+python experiments/run_trainable.py --model_desc supervised_arithmetic --model_backend_type vit --split random
+```
+- on the difficult distractors run:
+```commandline
+python experiments/run_trainable.py --model_desc supervised_arithmetic --model_backend_type vit --split difficult
+```

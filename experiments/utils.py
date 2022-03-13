@@ -5,8 +5,7 @@ import numpy as np
 import os
 import pandas as pd
 import pickle
-from config import TRAIN, TEST, DEV, SPLIT_PATH
-
+from models_config import TRAIN, TEST, DEV, SPLIT_PATH
 
 # ------------------------------Code--------------------------------
 
@@ -83,7 +82,7 @@ def get_split(args):
     dir_path = os.path.join(SPLIT_PATH, f'split_{args.split}')
 
     print(f"dir_path: {dir_path}")
-    files = [f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f))]
+    files = [f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f)) and f.endswith(".csv")]
 
     print(f"Files splits: {files}")
 

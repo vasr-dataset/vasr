@@ -4,6 +4,8 @@ Repository for the paper "VASR: Visual Analogies of Situation Recognition": http
 To create the dataset, enter the [dataset](dataset) directory.  
 To run model experiments, enter the [experiments](experiments) directory.
 
+![](fig1.png)
+
 ## Setup
 - Run:
     ```

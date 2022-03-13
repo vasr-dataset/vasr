@@ -5,10 +5,10 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-from utills import get_split
+from utils import get_split
 import argparse
 import os
-from utills import save_model, dump_test_info, dump_train_info, calculate_accuracy
+from utils import save_model, dump_test_info, dump_train_info, calculate_accuracy
 from models.backend import BackendModel
 from models.trainable import BaselineModel
 from models_config import TRAIN, DEV, TRAIN_RESULTS_PATH, TEST, MODELS_MAP, model_description_options
@@ -27,7 +27,7 @@ def get_args():
     parser.add_argument('-lr', '--lr', help='learning rate', default=0.001, type=float)
     parser.add_argument('-bz', '--batch_size', default=128, type=int)
     parser.add_argument('--model_description', help=f'options: {model_description_options}', type=str, required=True)
-    parser.add_argument('--n_epochs', default=3, type=int)
+    parser.add_argument('--n_epochs', default=5, type=int)
     parser.add_argument('--split', default='random', help='Path to save the results as csv')
     parser.add_argument('--model_backend_type', default='vit', help="vit", required=False)
     parser.add_argument("--test_model", action='store_const', default=False, const=True)
