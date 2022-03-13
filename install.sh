@@ -16,3 +16,6 @@ mv assets dataset
 
 # Prepare the experiments output results
 mkdir experiments/data/model_results
+
+rm images_512.zip vasr_dataset.zip assets.zip
+rm -rf __MACOSX
