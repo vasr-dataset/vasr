@@ -51,7 +51,8 @@ class Loader(Dataset):
         candidates = eval(row.candidates) + [row.D_img]
         random.shuffle(candidates)
         candidates = np.array(candidates)
-        label = torch.from_numpy(np.where(candidates == row.D_img)[0])
+        label_key = 'workers_most_common_answer' if 'workers_most_common_answer' in self.data.columns else 'D_img'
+        label = torch.from_numpy(np.where(candidates == row[label_key])[0])
         label = label.to(device)
         images_to_load = {'A': row.A_img, 'B': row.B_img, 'C': row.C_img}
 
