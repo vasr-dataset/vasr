@@ -1,16 +1,15 @@
+import json
+import os
 from copy import deepcopy
 
-import pandas as pd
-import json
 import numpy as np
-import os
-
-import random
+import pandas as pd
 from tqdm import tqdm
 
-from dataset.config import imsitu_path, SPLIT, get_dict_sim
+from dataset.dataset_config import imsitu_path, SPLIT
+from dataset.utils.utils import get_dict_sim
 
-path = '/data/users/yonatab/analogies/imSitu/analogies_outputs/data/split_distractors/analogies_distractors_test_final.csv'
+path = 'dataset/analogies_outputs/data/split_distractors/analogies_distractors_test_final.csv'
 
 def solve_analogy(r, data_split):
     r['B_annotations']['verb'] = r['B_verb']

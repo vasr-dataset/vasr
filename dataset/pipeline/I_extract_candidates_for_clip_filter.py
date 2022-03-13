@@ -10,10 +10,11 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from dataset.dataset_config import imsitu_path, SPLIT
 from dataset.utils.run_gsr_solver import solve_analogy_all_frames_given_distractor
-from dataset.utils.visualization import visualize_analogy_and_distractors, plot_distractors
-from utils.utils import imsitu_path, SPLIT, split_to_files, data_path, \
+from dataset.utils.utils import split_to_files, data_path, \
     distractors_cache_by_keys_path, get_dict_sim, BAD_IMAGES, columns_to_serialize
+from dataset.utils.visualization import visualize_analogy_and_distractors, plot_distractors
 
 cases_with_pos_sim = 0
 cases_with_filtered_solution = 0
