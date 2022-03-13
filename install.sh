@@ -9,5 +9,10 @@ unzip vasr_dataset.zip
 mkdir experiments/data
 mv vasr_dataset experiments/data
 
+# Download the imSitu & SWiG splits (used for the dataset generation)
+wget https://my-vasr-bucket.s3.eu-west-1.amazonaws.com/assets.zip
+unzip assets.zip
+mv assets dataset
+
 # Prepare the experiments output results
 mkdir experiments/data/model_results
