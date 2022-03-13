@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from config import SUPERVISED_ARITHMETIC,SUPERVISED_CONCAT
+from models_config import SUPERVISED_ARITHMETIC,SUPERVISED_CONCAT
 
 
 NUM_CANDIDATE = 4

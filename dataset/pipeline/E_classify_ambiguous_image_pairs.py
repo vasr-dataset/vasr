@@ -181,12 +181,12 @@ def is_image_ambiguous(prob_A_class_AB, prob_B_class_AB):
     return maximal_wrong_prob(prob_A_class_AB, prob_B_class_AB) or opposite_prob(prob_A_class_AB, prob_B_class_AB)
 
 
-def maximal_wrong_prob(prob_A_class_AB, prob_B_class_AB):
-    return (0.41 <= prob_A_class_AB[0] <= 0.61 and prob_B_class_AB[0] > 0) or (
-            0.41 <= prob_B_class_AB[0] <= 0.61 and prob_A_class_AB[1] > 0)
+def maximal_wrong_prob(prob_A_class_AB, prob_B_class_AB, min_prob=0.41, max_prob=0.61):
+    return (min_prob <= prob_A_class_AB[0] <= max_prob and prob_B_class_AB[0] > 0) or (
+            min_prob <= prob_B_class_AB[0] <= max_prob and prob_A_class_AB[1] > 0)
 
-def opposite_prob(prob_A_class_AB, prob_B_class_AB):
-    return prob_B_class_AB[0] >= 0.66 or prob_A_class_AB[1] >= 0.66
+def opposite_prob(prob_A_class_AB, prob_B_class_AB, prob_threshold=0.66):
+    return prob_B_class_AB[0] >= prob_threshold or prob_A_class_AB[1] >= prob_threshold
 
 if __name__ == '__main__':
     print('Important: If you ran with --indices, run "merge_train_clip_VL_feats_for_AB_filter.py" later')

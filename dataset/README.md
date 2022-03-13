@@ -20,9 +20,9 @@ See [our paper](https://www.google.co.il/) for details, and the [dataset webpage
 ### To generate the dataset, run the entire pipeline: all the files in the pipeline folder.
 
 ## Requirements 
-#### 1. Download [Imsitu project](https://github.com/my89/imSitu) and change the path in config file accordingly.
-#### 2. Download [SWIG project](https://github.com/swig/swig) and change the path in config file accordingly.
-#### 3. Change the `SPLIT` variable in the config.py to the desire split (train, testdev).
+- Change the `SPLIT` variable in the config.py to the desire split (`train`, `testdev`, `dev`, `test`).
+- Steps A to G: Activate on SPLITS=`train`,`testdev`
+- In step H we sample the `test` and `dev` splits, so from this step forward (I to L) activate on `train` `dev` and `test*`
 
 **Convention**: In the paper we use A:A' :: B:B', in the code we use A:B :: C:D. 
 

@@ -39,10 +39,9 @@ MODELS_MAP = {
 
 # ------------------------------Paths--------------------------------
 
-IMAGES_PATH = 'images'
-SOURCE = '/Users/eliyahustrugo/PycharmProjects/vasr/experiments'
+IMAGES_PATH = 'imsitu_images'
 
-SPLIT_PATH = os.path.join(SOURCE, 'date_split')
+SPLIT_PATH = 'experiments/data/vasr_dataset'
 
 TEST_RANDOM_PATH = os.path.join(SPLIT_PATH, 'split_random', 'test_random.csv')
 TEST_GOLD_PATH = os.path.join(SPLIT_PATH, 'gold_standard', 'test_gold.csv')

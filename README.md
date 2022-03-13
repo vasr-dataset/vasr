@@ -5,11 +5,6 @@ To create the dataset, enter the [dataset](dataset) directory.
 To run model experiments, enter the [experiments](experiments) directory.
 
 ## Setup
-- Run installation script that downloads the resized images and creates output dir:
-    ```shell
-    ./install.sh 
-    ```
-    You can also download the original size images from http://imsitu.org/download/ (34G)
 - Run:
     ```
     virtualenv venv --python=python3.7  
@@ -17,7 +12,10 @@ To run model experiments, enter the [experiments](experiments) directory.
     pip install -r requirements.txt
     export PYTHONPATH=$(pwd)/dataset:$(pwd)/experiments
     ```
-
+- Run installation script:
+    ```shell
+    ./install.sh 
+    ```
 
 ## Abstract
 A core process in human cognition is analogical mapping:

@@ -26,7 +26,7 @@ It's possible to run the following examples with several models:
 ### Zero-Shot
 To evaluate arithmetic zero-shot on the random distractors run:
 ```commandline
-python run_zero_shot.py --model vit --split random  
+python experiments/run_zero_shot.py --model vit --split random  
 ```
 To evaluate arithmetic zero-shot on the difficult distractors run:
 ```commandline

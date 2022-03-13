@@ -190,12 +190,12 @@ def is_image_ambiguous(prob_A_class_AB, prob_B_class_AB):
 def is_image_ambiguous_mesh(A_clip_sents, B_clip_sents, logits_per_class_A, logits_per_class_B):
     return is_AB_similar_mesh(A_clip_sents, B_clip_sents, logits_per_class_A, 'A') or is_AB_similar_mesh(A_clip_sents, B_clip_sents, logits_per_class_B, 'B')
 
-def maximal_wrong_prob(prob_A_class_AB, prob_B_class_AB):
-    return (0.41 <= prob_A_class_AB[0] <= 0.61 and prob_B_class_AB[0] > 0) or (
-            0.41 <= prob_B_class_AB[0] <= 0.61 and prob_A_class_AB[1] > 0)
+def maximal_wrong_prob(prob_A_class_AB, prob_B_class_AB, min_prob=0.41, max_prob=0.61):
+    return (min_prob <= prob_A_class_AB[0] <= max_prob and prob_B_class_AB[0] > 0) or (
+            min_prob <= prob_B_class_AB[0] <= max_prob and prob_A_class_AB[1] > 0)
 
-def opposite_prob(prob_A_class_AB, prob_B_class_AB):
-    return prob_B_class_AB[0] >= 0.66 or prob_A_class_AB[1] >= 0.66
+def opposite_prob(prob_A_class_AB, prob_B_class_AB, prob_threshold=0.66):
+    return prob_B_class_AB[0] >= prob_threshold or prob_A_class_AB[1] >= prob_threshold
 
 def is_AB_similar_mesh(A_sents, B_sents, logits_per_class, A_or_B):
     if len(A_sents) == 0 or len(B_sents) == 0:

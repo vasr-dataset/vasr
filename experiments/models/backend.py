@@ -4,7 +4,7 @@ from PIL import Image
 import os
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
-from config import IMAGES_PATH
+from models_config import IMAGES_PATH
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 

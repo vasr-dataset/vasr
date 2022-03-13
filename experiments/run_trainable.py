@@ -11,7 +11,7 @@ import os
 from utills import save_model, dump_test_info, dump_train_info, calculate_accuracy
 from models.backend import BackendModel
 from models.trainable import BaselineModel
-from config import TRAIN, DEV, TRAIN_RESULTS_PATH, TEST, MODELS_MAP, model_description_options
+from models_config import TRAIN, DEV, TRAIN_RESULTS_PATH, TEST, MODELS_MAP, model_description_options
 
 # ------------------------------Constants--------------------------------
 
