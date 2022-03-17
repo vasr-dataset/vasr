@@ -46,7 +46,7 @@ def get_args():
     parser.add_argument("--debug", action='store_const', default=False, const=True)
     parser.add_argument("--multi_gpu", action='store_const', default=False, const=True)
     parser.add_argument("--test_model", action='store_const', default=False, const=True)
-    parser.add_argument('--load_epoch', default=2)
+    parser.add_argument('--load_epoch', default='BEST')
     parser.add_argument("--few_shot_experiments", action='store_const', help='few-shot experiments', default=False, const=True)
     parser.add_argument("--train_on_silver", action='store_const', default=False, const=True)
     parser.add_argument("--cheap_model", action='store_const', default=False, const=True)
@@ -78,8 +78,9 @@ class Loader(Dataset):
             images_to_load = {'A': row.A_img, 'B': row.B_img, 'C': row.C_img}
             input_imgs = {k: self.backend_model.load_and_process_img(v) for k, v in images_to_load.items()}
             # input_imgs = list(images_to_load.values())
+            option_tensor = self.backend_model.load_and_process_img(row.option)
 
-            return input_imgs, row.option, label
+            return input_imgs, option_tensor, label
         else:
 
             candidates = eval(row.candidates) + [row.D_img]
@@ -359,7 +360,7 @@ if __name__ == '__main__':
 
     if args.debug:
         print(f"*** DEBUG MODE ***")
-
+        main()
     elif args.few_shot_experiments:
         test_all = args.test_model
         for few_shot_items in FEW_SHOT_DATA_SAMPLES:
