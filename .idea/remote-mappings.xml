@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteMappingsManager">
+    <list>
+      <list>
+        <remote-mappings server-id="python@sftp://ec2-user@ec2-63-34-140-235.eu-west-1.compute.amazonaws.com:22/data/users/yonatab/analogies/vasr/venv/bin/python">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/data/users/yonatab/analogies/vasr_TEST/vasr-main" />
+            </list>
+          </settings>
+        </remote-mappings>
+        <remote-mappings server-id="python@sftp://ec2-user@ec2-63-34-140-235.eu-west-1.compute.amazonaws.com:22/data/users/yonatab/analogies/vasr_TEST/vasr-main/venv/bin/python">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/data/users/yonatab/analogies/vasr_TEST/vasr-main" />
+            </list>
+          </settings>
+        </remote-mappings>
+      </list>
+    </list>
+  </component>
+</project>

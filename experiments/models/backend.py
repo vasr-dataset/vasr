@@ -50,18 +50,18 @@ class BackendModel:
         img_preprocessed = img_preprocessed.to(device)
         return img_preprocessed
 
-    def forward_core_model(self, img):
-        s = '/Users/eliyahustrugo/PycharmProjects/image_analogies_0/imsitu_data/tensor_data'
-        x = []
-        if not isinstance(img,list):
-            img = list(img)
-        for i in img:
-            i = i.replace('jpg', 'pt')
-            with open(os.path.join(s, i[0], i), 'rb') as f:
-                x.append(torch.load(f))
-
-        x = torch.stack(x).squeeze()
-        return x
+    # def forward_core_model(self, img):
+    #     s = '/Users/eliyahustrugo/PycharmProjects/image_analogies_0/imsitu_data/tensor_data'
+    #     x = []
+    #     if not isinstance(img,list):
+    #         img = list(img)
+    #     for i in img:
+    #         i = i.replace('jpg', 'pt')
+    #         with open(os.path.join(s, i[0], i), 'rb') as f:
+    #             x.append(torch.load(f))
+    #
+    #     x = torch.stack(x).squeeze()
+    #     return x
     # def forward_core_model(self, img):
     #     s = '/Users/eliyahustrugo/PycharmProjects/image_analogies_0/imsitu_data/tensor_data'
     #     x = []
@@ -73,12 +73,12 @@ class BackendModel:
     #     x = torch.stack(x).squeeze()
     #     return x
 
-    # def forward_core_model(self, img):
-    #
-    #     x = self.backend_model.forward_features(img)
-    #     if self.model_backend_type == 'convnext':
-    #         x = self.backend_model.head(x)
-    #     return x
+    def forward_core_model(self, img):
+
+        x = self.backend_model.forward_features(img)
+        if self.model_backend_type == 'convnext':
+            x = self.backend_model.head(x)
+        return x
 
     def create_timm_model(self, backend_version):
 

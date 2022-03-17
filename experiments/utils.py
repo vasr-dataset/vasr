@@ -5,7 +5,7 @@ import numpy as np
 import os
 import pandas as pd
 import pickle
-from config import TRAIN, TEST, DEV, SPLIT_PATH, GOLD_PATH_DIR
+from config import TRAIN, TEST, DEV, SPLIT_PATH
 
 # ------------------------------Constants--------------------------------
 
@@ -108,13 +108,10 @@ def dump_train_info(args, model_dir_path, all_losses, all_dev_accuracy, epoch):
 def get_split(args):
     split = {}
 
-    if args.few_shot_experiments and split == 'distractors':
-        dir_path = GOLD_PATH_DIR
-    else:
-        dir_path = os.path.join(SPLIT_PATH, f'split_{args.split}')
+    dir_path = os.path.join(SPLIT_PATH, f'split_{args.split}')
 
     print(f"dir_path: {dir_path}")
-    files = [f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f))]
+    files = [f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f)) and f.endswith(".csv")]
 
     print(f"Files splits: {files}")
 
@@ -129,9 +126,6 @@ def get_split(args):
 
             if TRAIN in file:
                 train_df = pd.read_csv(file_path)
-                if args.few_shot_experiments:
-                    print(f"*** few_shot_experiments, sampling train from {len(train_df)} to {args.few_shot_items}")
-                    train_df = train_df.sample(args.few_shot_items)
                 split[TRAIN] = train_df
                 setattr(args, TRAIN, file_path)
 
@@ -141,10 +135,6 @@ def get_split(args):
 
             elif TEST in file:
                 test_df = pd.read_csv(file_path)
-                if args.small_test:
-                    print(f"*** Small test ***, taking head 300")
-                    test_df = test_df.head(SMALL_TEST_SIZE)
-
                 split[TEST] = test_df
                 setattr(args, TEST, file_path)
 

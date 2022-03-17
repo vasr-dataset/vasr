@@ -7,10 +7,10 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-from utills import get_split
+from utils import get_split
 import argparse
 import os
-from utills import save_model, dump_test_info, dump_train_info, calculate_accuracy, calculate_accuracy_test
+from utils import save_model, dump_test_info, dump_train_info, calculate_accuracy, calculate_accuracy_test
 from config import TRAIN, DEV, TRAIN_RESULTS_PATH, TEST, FEW_SHOT_DATA_SAMPLES, MODELS_MAP
 from models.backend import BackendModel
 from models.trainable import BaselineModel
