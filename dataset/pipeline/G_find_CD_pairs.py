@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from config import PARAMS_FOR_SPLIT
+from dataset_config import PARAMS_FOR_SPLIT
 from utils.PairFilter import PairsFilter
 from utils.utils import ABCD_analogies_sampled_path, SPLIT, \
     columns_to_serialize, AB_matches_dict, swig_path
