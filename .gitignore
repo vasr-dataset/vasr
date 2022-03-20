@@ -152,3 +152,8 @@ dmypy.json
 
 # Mongo Explorer plugin:
 .idea/mongoSettings.xml
+
+sbatch
+*sbatch
+sbatch*
+sbatch/
