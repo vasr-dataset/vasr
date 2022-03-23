@@ -10,11 +10,11 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from dataset.dataset_config import imsitu_path, SPLIT
-from dataset.utils.run_gsr_solver import solve_analogy_all_frames_given_distractor
-from dataset.utils.utils import split_to_files, data_path, \
+from dataset_config import imsitu_path, SPLIT
+from utils.run_gsr_solver import solve_analogy_all_frames_given_distractor
+from utils.utils import split_to_files, data_path, \
     distractors_cache_by_keys_path, get_dict_sim, BAD_IMAGES, columns_to_serialize
-from dataset.utils.visualization import visualize_analogy_and_distractors, plot_distractors
+from utils.visualization import visualize_analogy_and_distractors
 
 cases_with_pos_sim = 0
 cases_with_filtered_solution = 0
@@ -66,15 +66,33 @@ def init_analogies(split_file_name):
     len_all = len(all_ABCD_matches_df)
     all_ABCD_matches_df = all_ABCD_matches_df[all_ABCD_matches_df['different_key'] != 'place']
     print(f"-- Removed place. Now length is {len(all_ABCD_matches_df)}, was {len_all}")
-    for c in columns_to_serialize:
-        if c in all_ABCD_matches_df.columns:
-            all_ABCD_matches_df[c] = all_ABCD_matches_df[c].apply(json.loads)
-    data_split = json.load(open(os.path.join(imsitu_path, f"{SPLIT}.json")))
+    json_loads(all_ABCD_matches_df)
+    load_split = SPLIT
+    if load_split in ['test', 'dev']:
+        load_split = 'testdev'
+    data_split = json.load(open(os.path.join(imsitu_path, f"{load_split}.json")))
+
     all_B_distractors_data = []
     all_C_distractors_data = []
     plot = False
     modolu = 1000 if SPLIT != 'train' else 10000
     return all_ABCD_matches_df, all_B_distractors_data, all_C_distractors_data, data_split, distractors_cache_by_keys, modolu, plot
+
+
+def json_loads(all_ABCD_matches_df):
+    drop_cols = []
+    for c in ['A_bounding_box', 'B_bounding_box', 'C_bounding_box', 'D_bounding_box', 'vl_feats_bbox_AB', 'vl_feats_bbox_CD']:
+        if c in all_ABCD_matches_df.columns:
+            drop_cols.append(c)
+    all_ABCD_matches_df.drop(columns=drop_cols, inplace=True)
+    for c in columns_to_serialize:
+        if c in all_ABCD_matches_df.columns:
+            print(c)
+            if c in ['vl_feats_full_img_AB', 'vl_feats_full_img_CD', 'B_bounding_box']:
+                all_ABCD_matches_df[c] = all_ABCD_matches_df[c].apply(
+                    lambda x: json.loads(str(x).replace('nan', 'NaN')))
+            else:
+                all_ABCD_matches_df[c] = all_ABCD_matches_df[c].apply(json.loads)
 
 
 def print_stats(all_B_distractors_data, all_C_distractors_data, r_idx, split_file_name):
@@ -113,7 +131,11 @@ def get_stat_for_dist_data(dist_data):
 
 
 def create_cache():
-    data_split = json.load(open(os.path.join(imsitu_path, f"{SPLIT}.json")))
+    load_split = SPLIT
+    if load_split in ['test', 'dev']:
+        load_split = 'testdev'
+    data_split = json.load(open(os.path.join(imsitu_path, f"{load_split}.json")))
+
     cache_by_keys = defaultdict(lambda: defaultdict(list))
     for img_name, img_data in tqdm(data_split.items(), desc="Creating cache", total=len(data_split)):
         if img_name in BAD_IMAGES:

@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from nltk.corpus import wordnet as wn
 
-from utils.wordnet_consts import general_synsets, human_keys, sick_cluster, arrest_cluster, \
+from dataset.utils.wordnet_consts import general_synsets, human_keys, sick_cluster, arrest_cluster, \
     mashing_cluster, cheering_cluster, nipping_cluster, stretching_cluster, raining_cluster, smiling_cluster, \
     wadling_cluster, sprinting_cluster, parading_cluster, weeping_cluster, slipping_cluster, kneeling_cluster, \
     swooping_cluster, blacklist_individuals_ambiguous

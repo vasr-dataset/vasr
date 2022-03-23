@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from dataset.dataset_config import imsitu_path, SPLIT
-from dataset.utils.utils import get_dict_sim
+from dataset_config import imsitu_path, SPLIT
+from utils.utils import get_dict_sim
 
 path = 'dataset/analogies_outputs/data/split_distractors/analogies_distractors_test_final.csv'
 

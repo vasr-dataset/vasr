@@ -11,9 +11,10 @@ import os
 import numpy as np
 from PIL import Image
 
-from dataset.config import swig_images_path, VIS_ENLARGE_FACTOR, NUM_CANDIDATES, FONT_SIZE, \
-    get_difference
+from dataset_config import swig_images_path
+from utils.utils import VIS_ENLARGE_FACTOR, get_difference
 
+FONT_SIZE = 12
 
 def visualize_pair(AB_match_dict, out_p=None, plot_annotations=True):
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(15,8))
@@ -296,7 +297,7 @@ def get_concat_h(im1, im2):
     dst.paste(im2, (im1.width, 0))
     return dst
 
-def visualize_candidates(analogy, return_fig=False):
+def visualize_candidates(analogy, return_fig=False, NUM_CANDIDATES=4):
     fig, axs = plt.subplots(nrows=NUM_CANDIDATES, ncols=1, figsize=(1.25 * VIS_ENLARGE_FACTOR, 5 * VIS_ENLARGE_FACTOR))
     candidates_images = analogy['candidates'] + [analogy['D_img']]
     random.shuffle(candidates_images)

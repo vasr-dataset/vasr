@@ -7,7 +7,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from G_find_CD_pairs import calculate_weighted_srl_score
-from utils.utils import data_path, columns_to_serialize
+from dataset.utils.utils import data_path, columns_to_serialize
 
 def main():
     train_df = pd.read_csv(os.path.join(data_path, 'ABCD_matches', f'all_ABCD_matches_rule_based_sampled_train.csv'))
@@ -17,16 +17,14 @@ def main():
 
     print(f"Loaded splits: train: {len(train_df)}, testdev_df: {len(testdev_df)}")
 
-    extract_testdev_jaccard_and_atoms_feats(train_df, testdev_df)
-    test_df_gold_before_annotation, dev_df_gold_before_annotation, dev_df_silver, train_df_gold_before_annotation = create_silver_and_gold_splits(testdev_df, train_df)
+    testdev_df = extract_testdev_jaccard_and_atoms_feats(train_df, testdev_df)
+    test_df_gold_before_annotation, dev_df_silver, train_df_silver = create_silver_and_gold_splits(testdev_df, train_df)
 
-    dev_df_silver.to_csv(os.path.join(data_path, 'ABCD_matches', f'all_ABCD_matches_rule_based_sampled_dev.csv'),index=False)
-    dev_df_gold_before_annotation.to_csv(os.path.join(data_path, 'ABCD_matches', f'all_ABCD_matches_rule_based_sampled_dev_gold_before_annotation.csv'), index=False)
-    test_df_gold_before_annotation.to_csv(os.path.join(data_path, 'ABCD_matches', f'all_ABCD_matches_rule_based_sampled_test_gold_before_annotation.csv'),index=False)
+    test_df_gold_before_annotation.to_csv(os.path.join(data_path, 'ABCD_matches', f'all_ABCD_matches_rule_based_sampled_test.csv'), index=False)
+    dev_df_silver.to_csv(os.path.join(data_path, 'ABCD_matches', f'all_ABCD_matches_rule_based_sampled_dev.csv'), index=False)
+    train_df_silver.to_csv(os.path.join(data_path, 'ABCD_matches', f'all_ABCD_matches_rule_based_sampled_train_full.csv'), index=False)
 
-    train_df.to_csv(os.path.join(data_path, 'ABCD_matches', f'all_ABCD_matches_rule_based_sampled_train_full.csv'), index=False)
-
-    print(f"Dumped train & dev: train_df: {len(train_df)}, train_df_ood: {len(train_df)}")
+    print(f"Dumped train & dev: train_df_silver: {len(train_df_silver)}, dev_df_silver: {len(dev_df_silver)}")
 
     print("Done")
 
@@ -40,11 +38,8 @@ def extract_testdev_jaccard_and_atoms_feats(train_df, testdev_df):
     json_loads(train_df)
 
     atoms_counter, atoms_counter_as_diff_key = calculate_train_atoms_occurences(train_df)
-
     testdev_df = calc_jaccard_and_atoms_occs(testdev_df, atoms_counter, atoms_counter_as_diff_key)
-
-    json_dumps(testdev_df)
-
+    return testdev_df
 
 def calculate_train_atoms_occurences(train_df):
     atoms_counter = defaultdict(int)
@@ -142,77 +137,59 @@ def calculate_AC_jaccard_distance(r):
     return keys_jaccard, values_jaccard
 
 
-def create_silver_and_gold_splits(testdev_df, train_df_silver):
-    json_loads(testdev_df)
-
+def create_silver_and_gold_splits(testdev_df, train_df_silver_all):
     feats_df = pd.DataFrame.from_records(testdev_df['analogy_difficulty_score'].values)
     testdev_feats_df = pd.concat([testdev_df, feats_df], axis=1)
     testdev_sorted_df = testdev_feats_df.sort_values(['keys_jaccard', 'values_jaccard', 'mean_diff_key_occs', 'max_diff_key_occs', 'score_srl_weighted_AB', 'score_srl_weighted_CD'], ascending=[True, True, True, True, False, False])
 
     test_df = build_test(testdev_sorted_df)
 
-    NOISE_LEVEL = 0.4
-    desired_dev_gold_size_after_annotation = 100
-    train_df_ood_gold_desired_size = 1000
+    train_df_silver_desired_size = 250000
+    dev_df_silver_desired_size = 2500
+    test_df_percentages = test_df['different_key'].value_counts().apply(lambda x: x / len(test_df))
 
-    dev_df_gold_before_annotation, dev_df_silver, test_df_percentages = build_dev(NOISE_LEVEL,
-                                                                                  desired_dev_gold_size_after_annotation,
-                                                                                  test_df, testdev_df)
+    dev_df_silver = build_dev(test_df, testdev_df, test_df_percentages, dev_df_silver_desired_size)
+    train_df_silver = build_train(test_df_percentages, train_df_silver_all, train_df_silver_desired_size)
 
-    train_df_gold_before_annotation = build_train(NOISE_LEVEL, dev_df_silver, test_df_percentages,
-                                                  train_df_ood_gold_desired_size, train_df_silver)
-
-
-    print(test_df['different_key'].value_counts())
     relevant_test_keys = list(test_df['different_key'].value_counts().keys())
     test_gold_vc = test_df['different_key'].value_counts()
     test_gold_vc.name = 'Test'
 
     train_silver_vc = train_df_silver[train_df_silver['different_key'].isin(relevant_test_keys)]['different_key'].value_counts()
     train_silver_vc.name = 'Train'
-    dev_silver_vc = dev_df_silver['different_key'].value_counts()
+    dev_silver_vc = dev_df_silver[dev_df_silver['different_key'].isin(relevant_test_keys)]['different_key'].value_counts()
     dev_silver_vc.name = 'Dev'
     silver_stats = pd.DataFrame(pd.concat([train_silver_vc, dev_silver_vc, test_gold_vc],axis=1))
+    silver_stats.loc['Total'] = silver_stats.sum()
     print(silver_stats)
-
-    train_gold_vc = train_df_gold_before_annotation[train_df_gold_before_annotation['different_key'].isin(relevant_test_keys)]['different_key'].value_counts()
-    train_gold_vc.name = 'Train'
-    dev_gold_vc = dev_df_gold_before_annotation['different_key'].value_counts()
-    dev_gold_vc.name = 'Dev'
-    gold_stats = pd.DataFrame(pd.concat([train_gold_vc, dev_gold_vc, test_gold_vc],axis=1))
-    print(gold_stats)
-
-    print(f"Done creating test")
+    print(f"Done sampling")
+    json_dumps(test_df)
+    json_dumps(dev_df_silver)
+    json_dumps(train_df_silver)
+    return test_df, dev_df_silver, train_df_silver
 
 
-def build_train(NOISE_LEVEL, dev_df_silver, test_df_percentages, train_df_ood_gold_desired_size, train_df_silver):
-    required_train_gold_silver_annotations = int(train_df_ood_gold_desired_size / (1 - NOISE_LEVEL))
-    train_df_items_to_sample = test_df_percentages.apply(lambda x: int(x * required_train_gold_silver_annotations) + 1)
+def build_train(test_df_percentages, train_df_silver, train_df_silver_desired_size):
+    train_df_items_to_sample = test_df_percentages.apply(lambda x: int(x * train_df_silver_desired_size) + 1)
     train_df_items = []
     for diff_key, diff_key_items_to_sample in train_df_items_to_sample.items():
-        train_df_silver_diff_key = train_df_silver[dev_df_silver['different_key'] == diff_key]
+        train_df_silver_diff_key = train_df_silver[train_df_silver['different_key'] == diff_key]
         if len(train_df_silver_diff_key) > diff_key_items_to_sample:
             train_df_silver_diff_key = train_df_silver_diff_key.sample(diff_key_items_to_sample)
         train_df_items.append(train_df_silver_diff_key)
-    desired_train_gold_size_after_annotation = 1000
-    required_train_silver_annotation = int(desired_train_gold_size_after_annotation / (1 - NOISE_LEVEL))
-    train_df_gold_before_annotation = train_df_silver.sample(required_train_silver_annotation)
-    return train_df_gold_before_annotation
+    train_df_silver = pd.concat(train_df_items)
+    return train_df_silver
 
 
-def build_dev(NOISE_LEVEL, desired_dev_gold_size_after_annotation, test_df, testdev_df):
+def build_dev(test_df, testdev_df, test_df_percentages, dev_df_silver_desired_size):
     all_test_images = set(
         [item for sublist in test_df[['A_img', 'B_img', 'C_img', 'D_img']].values for item in sublist])
     dev_df_no_test_images = testdev_df[testdev_df.apply(
         lambda r: all(x not in all_test_images for x in [r['A_img'], r['B_img'], r['C_img'], r['D_img']]), axis=1)]
-    test_df_percentages = test_df['different_key'].value_counts().apply(lambda x: x / len(test_df))
-    required_dev_silver_annotation = int(desired_dev_gold_size_after_annotation / (1 - NOISE_LEVEL))
-    dev_df_silver = dev_df_no_test_images
-    if required_dev_silver_annotation < len(dev_df_no_test_images):
-        dev_df_gold_before_annotation = dev_df_no_test_images.sample(required_dev_silver_annotation)
-    else:
-        dev_df_gold_before_annotation = dev_df_no_test_images
-    return dev_df_gold_before_annotation, dev_df_silver, test_df_percentages
+
+    dev_df_silver = build_train(test_df_percentages, dev_df_no_test_images, dev_df_silver_desired_size)
+
+    return dev_df_silver
 
 
 def build_test(testdev_sorted_df):
