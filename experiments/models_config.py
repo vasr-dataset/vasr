@@ -39,8 +39,7 @@ MODELS_MAP = {
 
 # ------------------------------Paths--------------------------------
 
-# IMAGES_PATH = 'imsitu_images'
-IMAGES_PATH = '/cs/snapless/roys/yonatanbitton/swig/images_512'
+IMAGES_PATH = 'imsitu_images'
 
 SPLIT_PATH = 'experiments/data/vasr_dataset'
 
