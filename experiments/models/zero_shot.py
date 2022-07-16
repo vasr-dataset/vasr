@@ -103,7 +103,7 @@ class ZeroShot:
         """
 
         if self.model_type in timm_models:
-            # x = self.model.forward_features(img) # timm package changed functionality have changed
+            # x = self.model.forward_features(img) # timm package functionality have changed
             x = self.model(img)
             return x
         else:
