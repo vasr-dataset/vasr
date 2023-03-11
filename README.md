@@ -1,6 +1,7 @@
 # VASR: Visual Analogies of Situation Recognition
 
 Repository for the paper "VASR: Visual Analogies of Situation Recognition".  
+Paper: https://arxiv.org/abs/2212.04542
 Project website: https://vasr-dataset.github.io/.   
 Huggingface integration + dataset card: https://huggingface.co/datasets/nlphuji/vasr.   
 To create the dataset, enter the [dataset](dataset) directory.  
