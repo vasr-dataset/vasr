@@ -10,7 +10,7 @@ See [our paper](https://www.google.co.il/) for details, and the [dataset webpage
 # Download dataset
 
 ### The dataset is available on the website:
-* [Download dataset](https://www.google.co.il/) 
+* [Download dataset](https://huggingface.co/datasets/nlphuji/vasr/tree/main) 
 <br/>
   <!--The following splits are available for download: Entire dataset, Silver train, Silver test, Gold train, Gold dev and Gold test.--> 
 
